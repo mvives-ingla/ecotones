@@ -3,8 +3,6 @@
 ## br --> breaks
 ## res --> show result of lm in the plot
 
-## repassar tidy evaluation, etc. per afegir arguments amb ... i acabar de solucionar problemes
-## https://adv-r.hadley.nz/evaluation.html#quosure-dots
 
 boxplot <- function (data, x, y, fill = NULL, res = T, out = 0, br = 3, toupper = F,
                      outlier.shape = 19, ymax = NULL) {
@@ -71,11 +69,6 @@ boxplot <- function (data, x, y, fill = NULL, res = T, out = 0, br = 3, toupper 
       unnest(tuk)
     }
   
- #aconseguir fer-ho amb el procediment de multcomp
-  # primer glht
-  # segon cld
-  # correccions de comparacions múltiples: https://cran.r-project.org/web/packages/afex/vignettes/afex_anova_example.html
-  # https://cran.r-project.org/web/packages/multcomp/vignettes/multcomp-examples.pdf
   
   
   if (toupper) {
@@ -98,60 +91,4 @@ boxplot <- function (data, x, y, fill = NULL, res = T, out = 0, br = 3, toupper 
   
   return (plot)
 }
-    
-  
-  
-  
-  
-  # if (out == 0) {
-  #   df <- data %>%
-  #     map (~ select (., patch_plot, yvar, species)) %>%
-  #     map (~ mutate (., var = .[[yvar]]))
-  #   
-  #   lim <- df %>%
-  #     map (~ group_by (., patch_plot)) %>%
-  #     map (~ mutate (.,
-  #                    Q75 = as.numeric (quantile (var, probs = 0.75, na.rm = T)),
-  #                    Q25 = as.numeric (quantile (var, probs = 0.25, na.rm = T)),
-  #                    IQR = IQR (var, na.rm = T),
-  #                    group = case_when (var > Q75 + 1.5*IQR ~ 1,
-  #                                       var >= Q75 ~ 2,
-  #                                       var >= Q25 ~ 3,
-  #                                       var >= Q25 - 1.5*IQR ~ 4,
-  #                                       TRUE ~ 5))) %>%
-  #     map (~ ungroup (.)) %>%
-  #     map (~ filter (.,
-  #                    group != 1,
-  #                    group != 5)) %>%
-  #     map (~ group_by (., patch_plot)) %>%
-  #     map (~ summarise (.,
-  #                       ymax = max (var, na.rm = T),
-  #                       ymin = min (var, na.rm = T)))
-  #   
-  #   
-  #   plot <- df %>%
-  #     map (~ lm (formula = var ~ patch_plot, data = .)) %>%
-  #     map (~ emmeans (., ~ patch_plot)) %>% 
-  #     map (~ CLD (., method = "tukey", Letters = letters)) %>%
-  #     map2 (lim,
-  #           ~ data.frame (x = .x$patch_plot,
-  #                         y = max (.y$ymax),
-  #                         label = .x$.group)) %>%
-  #     map2 (df,
-  #           ~ ggplot (data = .y, aes (x = patch_plot, y = var)) +
-  #             geom_boxplot (outlier.shape = NA,
-  #                           fill = NA) +
-  #             geom_text (data = .x, aes (x = x, y = y, label = label),
-  #                        nudge_x = 0.1) +
-  #             labs (title = .y$species,
-  #                   y = yvar) +
-  #             theme_classic ()) %>% 
-  #     map2 (lim,
-  #           ~ .x +
-  #             scale_y_continuous (expand = expand_scale (mult = c(0.1, 0.2)),
-  #                                 limits = c (min (.y$ymin),
-  #                                             max (.y$ymax)),
-  #                                 breaks = pretty_breaks (n = br + 1, min.n = br)))
-  #   
-  # }
     
