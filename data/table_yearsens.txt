@@ -1,0 +1,16 @@
+"Sensor_name" "sensor" "site" "patch2" "first" "last"
+"bosc_s3" "s12" "Me" "C" 2014 2018
+"casa_arbre_s2" "s14" "Me" "SC" 2014 2017
+"pedra_corba_s2" "s15" "Me" "SC" 2014 2017
+"inici_cami_s1" "s1" "Me" "SO" 2017 2018
+"CJ_s7_inicicamp_paretcadena" "s3" "Me" "SO" 2014 2017
+"s12_alzinar_pal_telefon" "s6" "Me" "O" 2014 2018
+"s8_marge_fita_valla" "s7" "Me" "O" 2014 2017
+"BN_tossal_tancat" "s11" "Ld" "C" 2017 2018
+"malpolon_s5" "s13" "Ld" "C" 2014 2017
+"LD_caseta_anell_tancada" "s2" "Ld" "SC" 2017 2018
+"BN_nitr_tancat" "s4" "Ld" "SO" 2017 2018
+"BN_tossal_obert" "s5" "Ld" "SO" 2017 2018
+"pont_BN3" "s8" "Ld" "O" 2017 2018
+"LD_tossal" "s9" "Ld" "O" 2017 2018
+"ld_caseta_semioberta" "s10" "Ld" "O" 2017 2018
