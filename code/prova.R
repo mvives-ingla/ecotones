@@ -1,2 +1,0 @@
-##prova
-print("hello world!")
