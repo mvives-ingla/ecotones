@@ -52,6 +52,10 @@ fullmort <- read_csv("data/sim_mortalities/mort_min_tdtsim_sensors_full2021-06-2
   bind_rows(read_csv("data/sim_mortalities/mort_min_tdtsim_sensors_full2021-06-24.csv")) %>% 
   bind_rows(read_csv("data/sim_mortalities/mort_min_tdtsim_sensors_full2021-06-23.csv"))
 
+## Simulated data
+tdtdata <- read_csv("data/sim_mortalities/tdtsim_full2021-06-25.csv") %>% 
+  bind_rows(read_csv("data/sim_mortalities/tdtsim_full2021-06-24.csv")) %>% 
+  bind_rows(read_csv("data/sim_mortalities/tdtsim_full2021-06-23.csv"))
 
 ## Mean annual series of microclimatic field records at min resolution
 sensors_min_spline <- readRDS("data/sim_mortalities/sensors_minute_spline_2021-06-25.RDS")
@@ -1363,7 +1367,53 @@ Fig.trends[[12]] <- Fig.trends[[12]] + theme(axis.title.x = element_text(size = 
   plot_annotation(tag_levels = "A"))
 
 
-# Fig. S13: examples of acute vs chronic stresses ------------------------------
+
+# Fig. S13: summary of the z and CTmax values of the simulations ----------
+tdtmeans <- tdtdata %>% 
+  group_by(sp) %>% 
+  summarise(across(c(ctmax, z), .fns = mean)) %>% 
+  mutate(Data = "sim")
+
+tdtreal <- data.frame(sp = c("PN", "PR"),
+                      z = c(4.10, 5.10),
+                      ctmax = c(51.08, 53.48),
+                      Data = c("real", "real")) %>% 
+  add_row(tdtmeans)
+
+(simz <- tdtdata %>% 
+  ggplot(aes(x = z)) +
+  geom_density(aes(fill = sp), alpha = 0.5) +
+  geom_vline(data = tdtreal, aes(xintercept = z, color = sp, linetype = Data)) +
+  scale_fill_manual(aesthetics = c("fill", "color"),
+                    values = c("PN" = "deepskyblue",
+                               "PR" = "goldenrod1"),
+                    name = "Species",
+                    labels = c("<i>P. napi</i>", "<i>P. rapae</i>")) +
+  labs(x = "<i>z</i>",
+       y = "Denisty") +
+  guides(color = guide_legend(override.aes = list(linetype = 0))) +
+  theme(axis.title.x = element_markdown(),
+        legend.text = element_markdown()))
+
+(simct <- tdtdata %>% 
+  ggplot(aes(x = ctmax)) +
+  geom_density(aes(fill = sp), alpha = 0.5) +
+  geom_vline(data = tdtreal, aes(xintercept = ctmax, color = sp, linetype = Data)) +
+  scale_fill_manual(aesthetics = c("fill", "color"),
+                    values = c("PN" = "deepskyblue",
+                               "PR" = "goldenrod1"),
+                    name = "Species",
+                    labels = c("<i>P. napi</i>", "<i>P. rapae</i>")) +
+  labs(x = "CT<sub>max</sub>",
+       y = "Denisty") +
+  guides(color = guide_legend(override.aes = list(linetype = 0))) +
+  theme(axis.title.x = element_markdown(),
+        legend.text = element_markdown()))
+
+(sims <- simz + simct + plot_layout(guides = "collect") + plot_annotation(tag_levels = "A"))
+
+
+# Fig. S14: examples of acute vs chronic stresses ------------------------------
 (examp.temp <- sensors_spline %>% 
   mutate(daily_hour = hour - (day-1)*24 - 1) %>%
   filter(winter_jday %in% c(168, 217),
@@ -1433,7 +1483,7 @@ Fig.trends[[12]] <- Fig.trends[[12]] + theme(axis.title.x = element_text(size = 
 
 
 
-# Fig. S14: field mortality -----------------------------------------------
+# Fig. S15: field mortality -----------------------------------------------
 sp <- c("P. napi", "P. rapae")
 labs <- paste0("<i>", sp, "</i>", " ovipositing sites")
 names(labs) <- sp
