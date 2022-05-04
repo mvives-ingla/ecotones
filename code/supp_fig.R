@@ -189,30 +189,25 @@ source("code/ovip_models.R")
 
 ## foliar temperature
 th <- data.frame(th = seq(from = 35, to = 45, by = 2.5))
-(
-  leaftemp <- data.leaves %>%
+
+(leaftemp <- data.leaves %>%
     filter(microhabitat == "O",
            site == "AE",
            cycle_phase != "absence") %>%
-    pivot_longer(
-      cols = c(obv_temp, rev_temp),
-      names_to = "side",
-      values_to = "leaf_temp"
-    ) %>%
+    pivot_longer(cols = c(obv_temp, rev_temp),
+                 names_to = "side",
+                 values_to = "leaf_temp") %>%
     ggplot(aes(x = jday, y = leaf_temp, shape = cycle_phase)) +
     geom_hline(data = th, aes(yintercept = th, color = th)) +
     geom_point(alpha = 0.5) +
     geom_smooth(method = "lm", se = F, color = "black") +
-    scale_shape_manual(
-      values = c(1, 19),
-      labels = c("spring plants", "summer resprout"),
-      name = "Plant stage"
-    ) +
+    scale_shape_manual(values = c(1, 19),
+                       labels = c("spring plants", "summer resprout"),
+                       name = "Plant stage") +
     scale_color_gradientn(colours = heat.colors(50, rev = T),
                           name = "TAB\nthreshold\n(ºC)") +
     labs(x = "Julian day",
-         y = "Foliar\ntemperature\n(ºC)")
-)
+         y = "Foliar\ntemperature\n(ºC)"))
 
 ## thermal heterogeneity
 (sdleaf <- data.leaves %>% 
@@ -258,6 +253,9 @@ th <- data.frame(th = seq(from = 35, to = 45, by = 2.5))
 (temppattern <- soiltemp + microhtemp + leaftemp + sdleaf + offset +
     plot_layout(ncol = 1, guides = "collect") +
     plot_annotation(tag_levels = "A"))
+
+(temppattern <- temppattern & scale_x_continuous(limits = c(70, 300),
+                                 breaks = seq(90, 300, by = 60)))
 
 
 # Fig. S6&S7: seasonal patterns -------------------------------------------
@@ -1479,7 +1477,6 @@ tdtreal <- data.frame(sp = c("PN", "PR"),
 (examp.plot <- examp.temp$`168` + labs(tag = "A") + examp.mort$`168`  +
   examp.temp$`217` + labs(tag = "B") + examp.mort$`217` +
   plot_layout(guides = "collect", ncol = 2))
-
 
 
 

@@ -5,6 +5,8 @@
 
 # Packages ----------------------------------------------------------------
 library(tidyverse)
+library(ggtext)
+library(patchwork)
 library(broom)
 library(scales)
 library(ggnewscale)
@@ -83,6 +85,8 @@ tdtinters <- realtdtdata %>%
   geom_line(data = tdtinters, aes(x = time_x, y = time,
                                   color = NULL, fill = NULL),
             linetype = "dashed") +
+  geom_text(aes(x = 41, y = 10, label = "T*", xjust = 1, yjust = 1, size = 8,
+                fontface = "bold.italic"), color = "black") +
   theme_classic() +
   theme(legend.text = element_text(face = "italic")))
 
@@ -90,35 +94,38 @@ tdtinters <- realtdtdata %>%
 # B: chronic vs acute -----------------------------------------------------
 (examp.temp.ae <- sensors_spline %>% 
   mutate(daily_hour = hour - (day-1)*24 - 1) %>%
-  filter(winter_jday %in% c(229),
+  filter(winter_jday == 229,
          sensor %in% c("ld_caseta_semioberta",
                        "BN_tossal_obert")) %>% 
   mutate(sensor = case_when(sensor == "BN_tossal_obert" ~ "s5 - SO",
                             TRUE ~ "s10 - O"),
          sensor = factor(sensor,
                          levels = c("s5 - SO", "s10 - O"))) %>% 
-  split(.$winter_jday) %>% 
-  map2(c("Lowland, 17 August"),
-       ~ ggplot() +
-         geom_tile(data = data.frame(y = seq(37.5, 45, by = 0.1)),
-                   aes(x = 12,
-                       y = y,
-                       height = 0.1,
-                       width = 24,
-                       fill = y)) +
-         scale_fill_gradientn(colours = heat.colors(50, rev = T),
-                              name = "Temperature (ºC)",
-                              guide = guide_colorbar(direction = "horizontal",
-                                                     title.position = "top")) +
-         geom_line(data = .x, aes(x = daily_hour, y = ta.min,
-                                  color = sensor)) +
-         geom_hline(aes(yintercept = 41.2), linetype = "dashed") +
-         labs(x = "Hour of the day",
-              y = "Temperature (ºC)",
-              title = .y) +
-         scale_color_manual(name = "Sensor", values = c("gray25", "gray50")) +
-         scale_y_continuous(breaks = breaks_pretty(n = 3)) +
-         theme_classic()))
+   ggplot() +
+   geom_tile(data = data.frame(y = seq(37.5, 45, by = 0.1)),
+             aes(x = 12,
+                 y = y,
+                 height = 0.1,
+                 width = 24,
+                 fill = y)) +
+   scale_fill_gradientn(colours = heat.colors(50, rev = T),
+                        name = "Temperature (ºC)",
+                        guide = guide_colorbar(direction = "horizontal",
+                                               title.position = "top")) +
+   geom_line(aes(x = daily_hour, y = ta.min,
+                            color = sensor)) +
+   geom_hline(aes(yintercept = 41.2), linetype = "dashed") +
+   geom_text(aes(x = 24, y = 41.6, label = "T*", vjust = 0, hjust = 1,
+                 fontface = "bold.italic", size = 8)) +
+   labs(x = "Hour of the day",
+        y = "Temperature (ºC)",
+        title = "Lowland, 17 August") +
+   scale_color_manual(name = "Sensor", values = c("gray25", "gray50")) +
+   scale_y_continuous(breaks = breaks_pretty(n = 3)) +
+   scale_x_continuous(breaks = seq(0, 24, by = 6),
+                      limits = c(0,24),
+                      expand = c(0.01,0.01)) +
+   theme_classic())
 
 
 (examp.mort.ae <- fullmort %>% 
@@ -155,7 +162,7 @@ tdtinters <- realtdtdata %>%
 
 
 # C: mean mortality in the field ------------------------------------------
-(order_sens <- fullmort %>% 
+order_sens <- fullmort %>% 
   group_by(sensor, sp_comp, thres, simulation) %>% 
   arrange(winter_jday, .by_group = T) %>% 
   mutate(prob_surv = surv/100,
@@ -183,11 +190,11 @@ tdtinters <- realtdtdata %>%
   left_join(sensor_patch, by = c("sensor" = "Sensor_name")) %>% 
   filter(!is.na(mean_mort_1), patch2 != "C", !(patch2 == "SC" & site == "Me")) %>% 
   rownames_to_column() %>% 
-  mutate(site = if_else(site == "AE", "Ld - ", "Me - "),
+  mutate(site = if_else(site == "Ld", "Ld - ", "Me - "),
          site_patch = paste0("s", rowname, " - ",site, patch2),
          patch = if_else(patch2 == "O", "O", "OC"),
          patch = factor(patch, levels = c("O", "OC"))) %>% 
-  dplyr::select(-mean_mort_1))
+  dplyr::select(-mean_mort_1)
 
 sp <- c("P. napi", "P. rapae")
 labs2 <- paste0("Microhabitat selected by <i>", sp, "</i>")
@@ -244,13 +251,14 @@ names(labs2) <- c("OC", "O")
 (tdt.mort.plot <- tdtplot +
   labs(y = "Survival time<br>(min, log scale)",
        tag = "A") +
-  guides(color = "none", fill = "none") +
-  (examp.temp.ae$`229` +
+  guides(color = "none", fill = "none", size = "none") +
+  (examp.temp.ae +
      labs(tag = "B") + 
      guides(fill = guide_colorbar(direction = "vertical",
                                   title.position = "top",
-                                  title = "Tempeature<br>(ºC)",
-                                  title.hjust = 0.5)) +
+                                  title = "Temperature<br>(ºC)",
+                                  title.hjust = 0.5),
+            size = "none") +
      examp.mort.ae +
      theme(axis.text.x = element_blank(),
            axis.ticks.x = element_blank())) +
@@ -267,3 +275,4 @@ names(labs2) <- c("OC", "O")
         axis.title.x = element_text(size = 10),
         legend.title = element_markdown(size = 10),
         axis.text.y = element_text(size = 8)))
+
