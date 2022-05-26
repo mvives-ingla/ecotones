@@ -52,8 +52,9 @@ dif_ba_data <- data.leaves %>%
 
 dif_ba_test <- dif_ba_data %>% 
   lm(diff_obv_temp ~ Microhabitat, data = .) %>% 
-  tidy() %>% 
-  filter(term == "MicrohabitatO") %>% 
+  # tidy() %>% 
+  # filter(term == "MicrohabitatO") %>% 
+  glance() %>% 
   mutate(pval = if_else(round(p.value, 2)<= 0.05, "*", "")) %>% 
   select(pval) %>% 
   unlist()

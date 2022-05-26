@@ -15,6 +15,7 @@ library(readxl)
 library(emmeans)
 library(multcomp)
 library(broom)
+library(ggdist)
 
 
 # functions ---------------------------------------------------------------
@@ -69,7 +70,7 @@ sensors_spline <- sensors_min_spline %>%
   mutate(day = floor((hour-1)/24) + 1) %>% 
   left_join(dayjday)
 
-
+rm(sensors_min_spline)
 
 
 
@@ -1414,14 +1415,20 @@ tdtreal <- data.frame(sp = c("PN", "PR"),
 # Fig. S14: examples of acute vs chronic stresses ------------------------------
 (examp.temp <- sensors_spline %>% 
   mutate(daily_hour = hour - (day-1)*24 - 1) %>%
-  filter(winter_jday %in% c(168, 217),
-         sensor %in% c("ld_caseta_semioberta", "LD_tossal")) %>% 
+   filter(winter_jday %in% c(168, 217, 229),
+          sensor %in% c("ld_caseta_semioberta", "LD_tossal", "BN_tossal_obert")) %>% 
+   mutate(ta.min = case_when((winter_jday %in% c(168, 217) &
+                                 sensor == "BN_tossal_obert") ~ NA_real_,
+                              winter_jday == 229 &
+                                sensor == "LD_tossal" ~ NA_real_,
+                              T ~ ta.min)) %>% 
   mutate(sensor = case_when(sensor == "LD_tossal" ~ "s9 - Ld - O",
+                            sensor == "BN_tossal_obert" ~ "s5 - Ld - SO",
                             TRUE ~ "s10 - Ld - O"),
          sensor = factor(sensor,
-                         levels = c("s9 - Ld - O", "s10 - Ld - O"))) %>% 
+                         levels = c("s5 - Ld - SO", "s9 - Ld - O", "s10 - Ld - O"))) %>% 
   split(.$winter_jday) %>% 
-  map2(c("17 June", "5 Aug"),
+  map2(c("17 June", "5 Aug", "17 Aug"),
        ~ ggplot() +
          geom_tile(data = data.frame(y = seq(37.5, 45, by = 0.1)),
                    aes(x = 12,
@@ -1431,52 +1438,104 @@ tdtreal <- data.frame(sp = c("PN", "PR"),
                        fill = y)) +
          scale_fill_gradientn(colours = heat.colors(50, rev = T),
                               name = "Temperature (ºC)",
-                              guide = guide_colorbar(direction = "horizontal",
-                                                     title.position = "top")) +
+                              breaks = seq(from = 37.5,
+                                           to = 45,
+                                           by = 2.5),
+                              # guide = guide_colorbar(direction = "vertical",
+                              #                        title.position = "top",
+                              #                        ticks.colour = "black",
+                              #                        ticks.linewidth = 0.7,
+                              #                        draw.ulim = F,
+                              #                        draw.llim = F)) +
+                              guide = guide_bins(direction = "vertical",
+                                                title.position = "top",
+                                                show.limits = T,
+                                                reverse = T)) +
          geom_line(data = .x, aes(x = daily_hour, y = ta.min,
-                                  linetype = sensor)) +
+                                  color = sensor)) +
+                                  # linetype = sensor)) +
          geom_hline(aes(yintercept = 41.2)) +
+         geom_text(aes(x = 24, y = 41.6, label = "T*", vjust = 0, hjust = 1,
+                       fontface = "bold.italic", size = 8)) +
          labs(x = "Hour of the day",
               y = "Temperature (ºC)",
               title = .y) +
-         guides(linetype = guide_legend(title = "Sensor")) +
+         # scale_linetype_manual(values = c(1, 3, 5),
+         #                       name = "Sensor") +
+         scale_color_manual(values = grey_pal(start = 0,
+                                              end = 0.6)(3)) +
+         guides(size = "none") +
          scale_y_continuous(breaks = breaks_pretty(n = 3)) +
-         theme_classic()))
+         scale_x_continuous(breaks = seq(0, 24, by = 6),
+                            limits = c(0,24),
+                            expand = c(0.01,0.01)))) 
+
+
+
 
 (examp.mort <- fullmort %>% 
-  filter(thres == 100,
-         winter_jday %in% c(168, 217),
-         sensor %in% c("ld_caseta_semioberta", "LD_tossal")) %>% 
-  mutate(sensor = case_when(sensor == "LD_tossal" ~ "s9 - Ld - O",
-                            TRUE ~ "s10 - Ld - O"),
-         sensor = factor(sensor,
-                         levels = c("s9 - Ld - O", "s10 - Ld - O"))) %>% 
-  split(.$winter_jday) %>% 
-  map(~ ggplot(data = .x, aes(x = sp_comp, y = mort/100)) +
-        geom_point(size = 0.25, alpha = 0.5,
-                   position = position_jitterdodge(),
-                   aes(color = sp_comp)) +
-        geom_boxplot(aes(fill = sp_comp, linetype = sensor),
-                     outlier.shape = NA, fatten = 1) +
-        scale_color_manual(aesthetics = c("fill", "color"),
-                           values = c("P. napi" = "deepskyblue",
-                                      "P. rapae" = "goldenrod1"),
-                           name = "Species") +
-        guides(linetype = "none") +
-        facet_wrap(facets = vars(sensor), ncol = 2, scales = "free") +
-        labs(x = "Species",
-             y = "Mortality")) %>% 
-  map2(c(3, 2),
+    filter(thres == 100,
+           ((winter_jday %in% c(168, 217) &
+               sensor %in% c("ld_caseta_semioberta", "LD_tossal")) |
+              (winter_jday == 229 &
+                 sensor %in%  c("ld_caseta_semioberta",
+                                "BN_tossal_obert")))) %>%
+    mutate(sensor = case_when(sensor == "LD_tossal" ~ "s9 - Ld - O",
+                              sensor == "BN_tossal_obert" ~ "s5 - Ld - SO",
+                              TRUE ~ "s10 - Ld - O"),
+           sensor = factor(sensor,
+                           levels = c("s5 - Ld - SO", "s9 - Ld - O", "s10 - Ld - O")),
+           sp_side = if_else(sp_comp == "P. napi", "left", "right"),
+           just = if_else(sp_side == "left", 0, 0)) %>% 
+    split(.$winter_jday) %>% 
+    map(~ ggplot(data = .x, aes(x = sensor, y = mort/100)) +
+          stat_halfeye(aes(fill = sp_comp,
+                           side = sp_side),
+                       normalize = "groups",
+                       alpha = 0.65,
+                       .width = 0,
+                       point_colour = NA) +
+          geom_boxplot(aes(color = sensor,
+                           group = sp_comp),
+                       size = 0.8,
+                       outlier.shape = NA,
+                       width = 0.5,
+                       fill = NA,
+                       coef = 0) +
+          scale_fill_manual(values = c("P. napi" = "deepskyblue",
+                                        "P. rapae" = "goldenrod1"),
+                             name = "Species",
+                            guide = guide_legend(override.aes = list(color = NA))) +
+          facet_wrap(facets = vars(sensor), ncol = 2, scales = "free") +
+          labs(x = "Sensor",
+               y = "Mortality")) %>% 
+    map2(c(3, 2, 3),
+         ~ .x +
+           scale_y_continuous(breaks = breaks_pretty(n = .y)) +
+           theme_classic() +
+           theme(legend.text = element_text(face = "italic"),
+                 strip.background = element_blank(),
+                 strip.text = element_blank())) %>% 
+  map2(list(grey_pal(start = 0,
+                     end = 0.6)(3)[c(2, 3)],
+            grey_pal(start = 0,
+                     end = 0.6)(3)[c(2, 3)],
+            grey_pal(start = 0,
+                     end = 0.6)(3)[c(1, 3)]),
+    #list(c(3, 5), c(3, 5), c(1, 5)),
        ~ .x +
-         scale_y_continuous(breaks = breaks_pretty(n = .y)) +
-         theme_classic() +
-         theme(legend.text = element_text(face = "italic"),
-               strip.background = element_blank(),
-               axis.text.x = element_text(face = "italic"))))
+         scale_color_manual(values = .y, guide = "none")))
+
+
 
 (examp.plot <- examp.temp$`168` + labs(tag = "A") + examp.mort$`168`  +
   examp.temp$`217` + labs(tag = "B") + examp.mort$`217` +
-  plot_layout(guides = "collect", ncol = 2))
+    examp.temp$`229` + labs( tag = "C") + examp.mort$`229` +
+    plot_layout(guides = "collect", ncol = 2) &
+    theme(axis.title.x = element_text(size = 10),
+          axis.title.y = element_text(size = 10),
+          plot.title = element_text(size = 10),
+          legend.title = element_text(size = 10)))
 
 
 
@@ -1487,6 +1546,7 @@ names(labs) <- sp
 
 ## A: Daily mortality
 (dailymort <- fullmort %>%
+    filter(thres == 100) %>% 
   group_by(sensor, winter_jday, sp_comp, thres) %>% 
   summarise(meanmort = mean(mort),
             q975 = quantile(mort, 0.975),
@@ -1494,7 +1554,6 @@ names(labs) <- sp
             tmax = mean(tmax),
             tmin = mean(tmin)) %>% 
   left_join(sensor_patch, by = c("sensor" = "Sensor_name")) %>%
-  filter(thres == 100) %>% 
   mutate(patch3 = case_when(microhabitat == "O" ~ "O",
                             microhabitat %in% c("SO", "SC") ~ "OC",
                             TRUE ~ NA_character_)) %>% 
@@ -1506,7 +1565,7 @@ names(labs) <- sp
             tmin = min(tmin, na.rm = T)) %>% 
   ggplot(aes(x = winter_jday, y = meanmort)) +
   geom_ribbon(aes(ymax = tmax/50, ymin = tmin/50),
-              alpha = 0.4) +
+              alpha = 0.5) +
   geom_col(aes(color = sp_comp, fill = sp_comp)) +
   geom_hline(aes(yintercept = 0.824), linetype = "dashed") +
   labs(y = "Daily mortality",
@@ -1522,9 +1581,13 @@ names(labs) <- sp
                      values = c("P. napi" = "deepskyblue",
                                 "P. rapae" = "goldenrod1"),
                      name = "Species") +
-  theme_classic() +
   theme(strip.text = element_markdown(),
-        legend.text = element_text(face = "italic")))
+        strip.background = element_blank(),
+        legend.text = element_text(face = "italic"),
+        axis.line.y.right = element_line(color = "gray60"),
+        axis.ticks.y.right = element_line(color = "gray60"),
+        axis.title.y.right = element_text(color = "gray60"),
+        axis.text.y.right = element_text(color = "gray60")))
 
 ## B: mortality during development with TAB
 (dvtmort <- fullmort %>% 
@@ -1548,6 +1611,7 @@ names(labs) <- sp
            (patch3 == "OC" & sp_comp == "P. napi")) %>% 
   group_by(patch3, sp_comp, winter_jday, thres) %>% 
   summarise(across(.cols = c(contains("prob_30")), mean)) %>% 
+  mutate(thres = if_else(thres == 100, "None", as.character(thres))) %>% 
   ggplot(aes(x = winter_jday, y = mean_prob_30,
              color = as.factor(thres), fill = as.factor(thres))) +
   geom_line() +
@@ -1564,100 +1628,12 @@ names(labs) <- sp
   labs(x = "Julian day",
        y = "Survival probability\nduring development") +
   theme_classic() +
-  theme(strip.text = element_markdown()))
-
-## C: interspecific ration of mean mortality in the field
-order_sens <- fullmort %>% 
-  group_by(sensor, sp_comp, thres, simulation) %>% 
-  arrange(winter_jday, .by_group = T) %>% 
-  mutate(prob_surv = surv/100,
-         log_prob = log10(prob_surv),
-         log_prob = if_else(log_prob == -Inf, -999, log_prob),
-         log_prob_30 = rollsum(log_prob, k = 30, fill = NA, align = "left"),
-         prob_30 = 10^log_prob_30,
-         mort_30 = 1-prob_30,
-         high_mort_5 = if_else(mort_30 >= 0.05, 1, 0),
-         high_mort_1 = if_else(mort_30 >= 0.01, 1, 0),
-         mort_30_filt = if_else(high_mort_1 == 1, mort_30, NA_real_)) %>% 
-  filter(!is.na(prob_30),
-         sensor != "s8_lepidium") %>% 
-  group_by(sensor, sp_comp, thres, simulation) %>% 
-  summarise(max_mort_30 = max(mort_30),
-            tmax = max(tmax),
-            days_highmort_1 = sum(high_mort_1),
-            mean_mort_1 = mean(mort_30_filt, na.rm = T),
-            mean_mort = mean(mort_30)) %>% 
-  filter(thres == 100) %>% 
-  group_by(sensor) %>% 
-  summarise(mean_mort_1 = mean(mean_mort_1, na.rm = T)) %>% 
-  arrange(mean_mort_1) %>% 
-  left_join(sensor_patch, by = c("sensor" = "Sensor_name")) %>% 
-  filter(!is.na(mean_mort_1), microhabitat != "C", !(microhabitat == "SC" & site == "Me")) %>% 
-  rownames_to_column() %>% 
-  mutate(site = if_else(site == "AE", "Ld - ", "Me - "),
-         site_patch = paste0("s", rowname, " - ",site, microhabitat),
-         patch = if_else(microhabitat == "O", "O", "OC"),
-         patch = factor(patch, levels = c("O", "OC"))) %>% 
-  dplyr::select(-mean_mort_1)
-
-sp <- c("P. napi", "P. rapae")
-labs2 <- paste0("<i>", sp, "</i> ovipositing sites")
-names(labs2) <- c("OC", "O")
-
-(sensmeanmort.rat <- fullmort %>% 
-  group_by(sensor, sp_comp, thres, simulation) %>% 
-  arrange(winter_jday, .by_group = T) %>% 
-  mutate(prob_surv = surv/100,
-         log_prob = log10(prob_surv),
-         log_prob = if_else(log_prob == -Inf, -999, log_prob),
-         log_prob_30 = rollsum(log_prob, k = 30, fill = NA, align = "left"),
-         prob_30 = 10^log_prob_30,
-         mort_30 = 1-prob_30,
-         high_mort_5 = if_else(mort_30 >= 0.05, 1, 0),
-         high_mort_1 = if_else(mort_30 >= 0.01, 1, 0),
-         mort_30_filt = if_else(high_mort_1 == 1, mort_30, NA_real_)) %>% 
-  filter(!is.na(prob_30),
-         sensor != "s8_lepidium") %>% 
-  group_by(sensor, sp_comp, thres, simulation) %>% 
-  summarise(max_mort_30 = max(mort_30),
-            tmax = max(tmax),
-            days_highmort_1 = sum(high_mort_1),
-            mean_mort_1 = mean(mort_30_filt, na.rm = T),
-            mean_mort = mean(mort_30)) %>% 
-  filter(thres == 100) %>% 
-  pivot_wider(id_cols = c(sensor, thres, simulation),
-              names_from = sp_comp,
-              values_from = mean_mort_1) %>% 
-  rename(PN = "P. napi", PR = "P. rapae") %>% 
-  mutate(rat_mort = PN/PR,
-         dif_mort = PN - PR) %>% 
-  left_join(order_sens) %>% 
-  filter(!is.na(site_patch)) %>% 
-  mutate(sensor = factor(sensor,
-                         levels = order_sens$sensor),
-         site_patch = factor(site_patch,
-                             levels = order_sens$site_patch),
-         patch = factor(patch, levels = c("OC", "O"))) %>% 
-  ggplot(aes(x = site_patch, y = rat_mort)) +
-  geom_point(size = 0.25, alpha = 0.5,
-             position = position_jitter()) +
-  geom_boxplot(outlier.shape = NA) +
-  facet_wrap(vars(patch), labeller = labeller(patch = labs2), scales = "free_x") +
-  scale_x_discrete(drop = T) +
-  labs(y = "Ratio of mean<br>thermal mortality<br>(Pn/Pr)",
-       x = "Sensor - site - microhabitat") +
-  geom_hline(aes(yintercept = 1)) +
-  theme_classic() +
-  theme(axis.text.x = element_text(angle = 30, hjust = 1),
-        axis.title.y = element_markdown(),
-        legend.text = element_text(face = "italic"),
-        strip.text = element_markdown(),
+  theme(strip.text = element_markdown(),
         strip.background = element_blank()))
 
 
-(fieldmort.plot <- dailymort + dvtmort + sensmeanmort.rat +
+(fieldmort.plot <- dailymort + dvtmort + 
   plot_layout(ncol = 1,
               guides = "collect") +
-  plot_annotation(tag_levels = "A") &
-  theme(strip.background = element_blank()))
+  plot_annotation(tag_levels = "A"))
 
