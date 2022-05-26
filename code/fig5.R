@@ -24,18 +24,6 @@ fullmort <- read_csv("data/sim_mortalities/mort_min_tdtsim_sensors_full2021-06-2
   bind_rows(read_csv("data/sim_mortalities/mort_min_tdtsim_sensors_full2021-06-24.csv")) %>% 
   bind_rows(read_csv("data/sim_mortalities/mort_min_tdtsim_sensors_full2021-06-23.csv"))
 
-## Mean annual series of microclimatic field records at min resolution
-sensors_min_spline <- readRDS("data/sim_mortalities/sensors_minute_spline_2021-06-25.RDS")
-
-dayjday <- fullmort %>% 
-  distinct(sensor, winter_jday) %>% 
-  group_by(sensor) %>% 
-  mutate(day = min_rank(winter_jday))
-
-sensors_spline <- sensors_min_spline %>% 
-  mutate(day = floor((hour-1)/24) + 1) %>% 
-  left_join(dayjday)
-rm(sensors_min_spline)
 
 # correspondence of each sensor to a microhabita type
 sensor_patch <- read_delim("data/table_yearsens.txt",
