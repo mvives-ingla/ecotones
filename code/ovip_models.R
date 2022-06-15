@@ -16,12 +16,18 @@ ovi.bysurv <- read.csv ("data/ovi_by_survey.csv")
 
 
 # model 1: number of oviposition per female -------------------------------
+# ovi.byfem <- ovi.byfem %>% 
+#   rownames_to_column() %>% 
+#   mutate(fem_code = if_else(is.na(fem_code), as.integer(rowname), fem_code))
+
 mod1 <- glmer (n_ovi ~
                  microhabitat*species +
                  (1 | day_period) +
                  (1 | jday_cat) +
                  (1 | site) +
+                 # (1 | fem_code) +
                  offset (log (duration)),
+               # na.action = na.pass,
                data = ovi.byfem,
                family = poisson)
 

@@ -30,16 +30,34 @@ tdt <- realtdtdata %>%
                    ~ tdt.curve(ta = .$SENSOR_mean_temp,
                                time = .$aprox_minute_dead)))
 
-## Testing more factor than temperature
+## Testing more factors than temperature
 mods <- realtdtdata %>% 
   nest(tdt_data = -sp) %>% 
   mutate(model = map(tdt_data,
-                     ~ lm(log10(aprox_minute_dead) ~ 
-                              SENSOR_mean_temp + initial.weight + Site*family,
+                     ~ lmer(log10(aprox_minute_dead) ~ 
+                              SENSOR_mean_temp + initial.weight + Site + (1|Site:family),
                           data = .)),
          summ = map(model, summary),
-         eff = map(model, anova),
-         gla = map(model, glance))
+         eff = map(model, car::Anova,type = "III"))
 
-mods$eff
-mods$gla
+
+mods$summ %>% 
+  set_names(nm = mods2$sp)
+
+mods$eff %>% 
+  set_names(nm = mods2$sp)
+
+
+realtdtdata %>% 
+  split(.$sp) %>% 
+  map(~ ggplot(data = .,
+               aes(x = initial.weight, y = log10(aprox_minute_dead),
+             color = as.factor(treatment))) +
+        geom_point() +
+        geom_smooth(method = "lm") +
+    labs(title = .$sp) +
+  theme_bw())
+
+
+
+

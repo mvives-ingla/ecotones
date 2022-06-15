@@ -1426,9 +1426,11 @@ tdtreal <- data.frame(sp = c("PN", "PR"),
                             sensor == "BN_tossal_obert" ~ "s5 - Ld - SO",
                             TRUE ~ "s10 - Ld - O"),
          sensor = factor(sensor,
-                         levels = c("s5 - Ld - SO", "s9 - Ld - O", "s10 - Ld - O"))) %>% 
+                         levels = c("s5 - Ld - SO", "s9 - Ld - O", "s10 - Ld - O")),
+         winter_jday = factor(winter_jday,
+                              levels = c("229", "217", "168"))) %>% 
   split(.$winter_jday) %>% 
-  map2(c("17 June", "5 Aug", "17 Aug"),
+  map2(c("17 Aug", "5 Aug", "17 June"),
        ~ ggplot() +
          geom_tile(data = data.frame(y = seq(37.5, 45, by = 0.1)),
                    aes(x = 12,
@@ -1486,7 +1488,9 @@ tdtreal <- data.frame(sp = c("PN", "PR"),
            sensor = factor(sensor,
                            levels = c("s5 - Ld - SO", "s9 - Ld - O", "s10 - Ld - O")),
            sp_side = if_else(sp_comp == "P. napi", "left", "right"),
-           just = if_else(sp_side == "left", 0, 0)) %>% 
+           just = if_else(sp_side == "left", 0, 0),
+           winter_jday = factor(winter_jday,
+                                levels = c("229", "217", "168"))) %>% 
     split(.$winter_jday) %>% 
     map(~ ggplot(data = .x, aes(x = sensor, y = mort/100)) +
           stat_halfeye(aes(fill = sp_comp,
@@ -1528,9 +1532,9 @@ tdtreal <- data.frame(sp = c("PN", "PR"),
 
 
 
-(examp.plot <- examp.temp$`168` + labs(tag = "A") + examp.mort$`168`  +
+(examp.plot <- examp.temp$`229` + labs(tag = "A") + examp.mort$`229`  +
   examp.temp$`217` + labs(tag = "B") + examp.mort$`217` +
-    examp.temp$`229` + labs( tag = "C") + examp.mort$`229` +
+    examp.temp$`168` + labs( tag = "C") + examp.mort$`168` +
     plot_layout(guides = "collect", ncol = 2) &
     theme(axis.title.x = element_text(size = 10),
           axis.title.y = element_text(size = 10),
@@ -1565,9 +1569,13 @@ names(labs) <- sp
             tmin = min(tmin, na.rm = T)) %>% 
   ggplot(aes(x = winter_jday, y = meanmort)) +
   geom_ribbon(aes(ymax = tmax/50, ymin = tmin/50),
-              alpha = 0.5) +
+              alpha = 0.3) +
   geom_col(aes(color = sp_comp, fill = sp_comp)) +
-  geom_hline(aes(yintercept = 0.824), linetype = "dashed") +
+  geom_hline(aes(yintercept = 0.824), linetype = "dashed",
+             alpha = 0.3) +
+  geom_text(aes(x = 240, y = 0.84, label = "T*",
+                fontface = "italic", vjust = 0, hjust = -1),
+            color = "gray60") +
   labs(y = "Daily mortality",
        x = "Julian day") +
   facet_wrap(facets = vars(sp_comp), ncol = 2,
@@ -1584,6 +1592,7 @@ names(labs) <- sp
   theme(strip.text = element_markdown(),
         strip.background = element_blank(),
         legend.text = element_text(face = "italic"),
+        legend.position = "bottom",
         axis.line.y.right = element_line(color = "gray60"),
         axis.ticks.y.right = element_line(color = "gray60"),
         axis.title.y.right = element_text(color = "gray60"),
@@ -1597,12 +1606,13 @@ names(labs) <- sp
          log_prob = log10(prob_surv),
          log_prob = if_else(log_prob == -Inf, -999, log_prob),
          log_prob_30 = rollsum(log_prob, k = 30, fill = NA, align = "left"),
-         prob_30 = 10^log_prob_30) %>% 
+         prob_30 = 10^log_prob_30,
+         mort_30 = 1-prob_30) %>% 
   filter(!is.na(prob_30)) %>% 
   group_by(sensor, sp_comp, winter_jday, thres) %>% 
-  summarise(mean_prob_30 = mean(prob_30),
-            upp_prob_30 = quantile(prob_30, 0.975),
-            low_prob_30 = quantile(prob_30, 0.025)) %>% 
+  summarise(mean_mort_30 = mean(mort_30),
+            upp_mort_30 = quantile(mort_30, 0.975),
+            low_mort_30 = quantile(mort_30, 0.025)) %>% 
   left_join(sensor_patch, by = c("sensor" = "Sensor_name")) %>% 
   mutate(patch3 = case_when(microhabitat == "O" ~ "O",
                             microhabitat %in% c("SO", "SC") ~ "OC",
@@ -1610,30 +1620,38 @@ names(labs) <- sp
   filter((patch3 == "O" & sp_comp == "P. rapae") |
            (patch3 == "OC" & sp_comp == "P. napi")) %>% 
   group_by(patch3, sp_comp, winter_jday, thres) %>% 
-  summarise(across(.cols = c(contains("prob_30")), mean)) %>% 
+  summarise(across(.cols = c(contains("mort_30")), mean)) %>% 
   mutate(thres = if_else(thres == 100, "None", as.character(thres))) %>% 
-  ggplot(aes(x = winter_jday, y = mean_prob_30,
+  ggplot(aes(x = winter_jday, y = mean_mort_30,
              color = as.factor(thres), fill = as.factor(thres))) +
   geom_line() +
-  geom_ribbon(aes(ymax = upp_prob_30, ymin = low_prob_30),
-              alpha = 0.25,
+  geom_ribbon(aes(ymax = upp_mort_30, ymin = low_mort_30),
+              alpha = 0.2,
               linetype = 0) +
   scale_x_continuous(breaks = seq(from = 60, to = 240, by = 60)) +
-  scale_y_continuous(limits = c(0,1)) +
+  scale_y_continuous(limits = c(0,1),
+                     breaks = seq(0, 1, 0.2)) +
   facet_grid(cols = vars(sp_comp), labeller = labeller(sp_comp = labs)) +
   guides(color = guide_legend(title = "TAB\nthreshold\n(ºC)",
                               title.hjust = 0.5,
-                              override.aes =list(fill = NA)),
+                              override.aes =list(fill = NA),
+                              position = "bottom"),
          fill = "none") +
   labs(x = "Julian day",
-       y = "Survival probability\nduring development") +
+       y = "Cumulative mortality\nduring development") +
   theme_classic() +
   theme(strip.text = element_markdown(),
-        strip.background = element_blank()))
+        strip.background = element_blank(),
+        legend.position = "bottom"))
 
 
 (fieldmort.plot <- dailymort + dvtmort + 
-  plot_layout(ncol = 1,
-              guides = "collect") +
-  plot_annotation(tag_levels = "A"))
+  plot_layout(ncol = 1) +
+              # guides = "collect") +
+  plot_annotation(tag_levels = "A")) #&
+    # theme(legend.position = "bottom"))
+
+
+
+
 
