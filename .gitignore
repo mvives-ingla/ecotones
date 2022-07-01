@@ -5,4 +5,4 @@
 data/sim_mortalities
 code/data_prep_v11.R
 code/mean_thermal_mortality_test
-figures/
+figures/*
