@@ -1,222 +1,234 @@
 ############
-## Fig. 3 ##
+## Fig. 2 ##
 ############
+
 
 # Packages ----------------------------------------------------------------
 library(tidyverse)
-library(ggtext)
-library(broom)
 library(readxl)
+library(patchwork)
+library(scales)
+library(ggtext)
+
+# Functions ---------------------------------------------------------------
+source("code/boxplot_ecotones_v11.R")
+source("code/result_bivar_in_subtitle.R")
 
 
 # Data --------------------------------------------------------------------
+## Oviposition by female
+ovi.byfem <- read.csv ("data/ovi_by_female.csv")
+## Temperature during ovipostion
+ovi.temp <- read.csv("data/ovi_temp.csv")
 ## Field campaign data at the host plant level
 data.plants <- read.csv("data/data_plants.csv")
 ## Field campaign data at the foliar level
 data.leaves <- read.csv("data/data_leaves.csv")
-## Thermal records from the ground
-soilgrad <- read_excel ("data/feedbacks_united_2019.05.07.xlsx")
 
+## Microhabitat air temperature at hourly resolution (all time series)
+sensor <- read.csv("data/sensors_hourly.csv")
+
+## Daily mean and maximum temperature from weather stations (macroclimate)
+meteo <- read.csv("data/meteorological_data.csv")
 
 theme_set(theme_classic())
 
-# b1: basal leaf - apical leaf --------------------------------------------
-dif_ba_data <- data.leaves %>%
-  filter(site == "AE") %>% 
-  left_join(data.plants) %>% 
-  group_by(site, microhabitat, jday) %>%
-  mutate(nleaftype = n_distinct(leaf_type)) %>%
-  filter (leaf_type %in% c("b", "m", "a"),
-          nleaftype == 3,
-          stem_length > 0) %>% 
-  group_by(site, microhabitat, jday, leaf_type, ind) %>% 
-  summarise(obv_temp = mean(obv_temp, na.rm = T)) %>%
-  pivot_wider(names_from = leaf_type,
-              values_from = obv_temp) %>% 
-  mutate(bm = b - m,
-         ba = b - a,
-         ma =  m - a) %>% 
-  pivot_longer(cols = bm:ma,
-               names_to = "diff_type",
-               values_to = "diff_obv_temp") %>% 
-  filter(diff_type == "ba", !is.na(diff_obv_temp)) %>% 
-  mutate(
-    Microhabitat = factor(microhabitat,
-                          levels = c("C", "SC", "SO", "O")),
-    Microhabitat = if_else(microhabitat %in% c("SO", "SC"),
-                           "SO+SC", microhabitat),
-    Microhabitat = factor(Microhabitat,
-                          levels = c("C", "SO+SC", "O"))
-  ) %>% 
-  filter(Microhabitat != "C")
-
-dif_ba_test <- dif_ba_data %>% 
-  lm(diff_obv_temp ~ Microhabitat, data = .) %>% 
-  # tidy() %>% 
-  # filter(term == "MicrohabitatO") %>% 
-  glance() %>% 
-  mutate(pval = if_else(round(p.value, 2)<= 0.05, "*", "")) %>% 
-  select(pval) %>% 
-  unlist()
-  
-
-(dif_ba_plot <- dif_ba_data %>%
-  ggplot(aes(x = Microhabitat, y = diff_obv_temp, fill = Microhabitat)) +
-  geom_boxplot(outlier.shape = NA) +
-  geom_hline(aes(yintercept = 0)) +
-  geom_text(aes(x = 1.5, y = 6, label = dif_ba_test)) +
-  scale_fill_manual(values = c("deepskyblue", "goldenrod")) +
-  scale_y_continuous(breaks = c(0, 5), limits = c(-4, 6)) +
-  labs(y = "Basal - Apical (K)") +
-  guides(fill = "none") +
-  theme(axis.title.x = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        panel.background = element_rect(color = "black")))
-
-ggsave(filename = "figures/fig3_b1.svg",
-       plot = dif_ba_plot,
-       width = 5,
-       height = 5,
-       units = "cm",
-       dpi = 600)
+# A: ovipositions per microhabitat -----------------------------------------
+(ovi.plot <- ovi.byfem %>% 
+  mutate(microhabitat = factor(microhabitat, levels = c("C", "OC", "O"))) %>% 
+  group_by(site, species, microhabitat, survey) %>% 
+  summarize (ovi = sum(n_ovi, na.rm = T),
+             fem = n_distinct(fem_code, na.rm = T),
+             duration = mean(duration, na.rm = T)) %>% 
+  group_by(species, microhabitat) %>% 
+  summarize(ovi = sum(ovi, na.rm = T),
+            fem = sum(fem, na.rm = T),
+            duration = sum(duration, na.rm = T)) %>% 
+  group_by(species) %>% 
+  mutate(std_ovi = ovi/duration*600, #number of ovipositions observed in 10h (oviposition rate)
+         total_std_ovi = sum (std_ovi, na.rm = T),
+         #relative fraction of oviposition rate
+         rel_std_ovi = std_ovi/total_std_ovi) %>% 
+  ggplot(aes(x = microhabitat, y = rel_std_ovi)) +
+  geom_col(aes(fill = species), position = "dodge2", color = "black") +
+  scale_fill_manual(labels = c("P. napi", "P. rapae"),
+                    name = "Butterfly",
+                    values = c("deepskyblue",
+                               "goldenrod")) +
+  labs(y = "Relative<br>frequency<br>of ovipositions") +
+  scale_x_discrete(labels = c("C", "SC+SO", "O"),
+                   name = "Microhabitat") +
+  scale_y_continuous(breaks = breaks_pretty(n = 3)) +
+  theme(legend.text = element_text(face = "italic"),
+        axis.title.y = element_markdown()))
 
 
-
-# b2: temperature change from the ground ----------------------------------
-
-soilabs_model <- soilgrad %>%
-  filter(site == "AE", rad == "R", wind == "NW")  %>% 
-  lm (formula =  temp ~ sinh (0.1*(100 - height)), data = .) %>% 
-  summary() %>% 
-  glance() %>% 
-  select(r.squared, p.value) %>% 
-  mutate(rsq = round(r.squared, 2),
-         pval = round(p.value, 4)) %>% 
-  mutate (pval = if_else(pval == 0, "<0.0001", paste ("=", pval)),
-          lab = paste0("*R*<sup>2</sup>=", rsq, "<br>*p*", pval))  
-
-
-(soilabs_plot <- soilgrad %>%
-  filter((site == "AE"))  %>% 
-  unite (col = "rad_wind", rad, wind, sep = "+", remove = F) %>% 
-  mutate (rad_wind = factor (rad_wind,
-                             levels = c("R+NW", "NR+W"))) %>% 
-  filter (!is.na (rad_wind)) %>% 
-  ggplot (aes (y = temp, x = height)) +
-  geom_point (aes (color = rad_wind), size = 0.7, alpha = 0.35) +
-  geom_smooth (aes (color = rad_wind, fill = rad_wind),
-               method = "lm",
-               formula = y ~ sinh (0.1*(100 - x))) +
-  scale_color_manual (aesthetics = c("colour", "fill"),
-                      values = c ("goldenrod", "deepskyblue"))  +
-    geom_richtext(x = 102,
-                  y = 47,
-                  label = soilabs_model$lab[1],
-                  hjust = 1,
-                  vjust = 1,
-                  color = "goldenrod",
-                  label.color = NA) +
-  labs (y = "Temperature (ºC)",
-        x = "Height (cm)") +
-  guides(color = "none", fill = "none") +
-  coord_flip() +
-  theme (axis.title.x = element_blank(),
-         axis.text.x = element_blank(),
-         axis.ticks.x = element_blank(),
-         panel.background = element_rect(color = "black")))
-
-ggsave(filename = "figures/fig3_b2.svg",
-       plot = soilabs_plot,
-       width = 5,
-       height = 5,
-       units = "cm",
-       dpi = 600)
+# B: foliar temperature during oviposition -----------------------------------
+(fol.temp <- ovi.temp %>% 
+  mutate (species = recode (species,
+                            PN = "P. napi",
+                            PR = "P. rapae")) %>% 
+  ggplot (aes (x = species, y = T_und)) +
+  geom_boxplot (aes (fill = species),
+                outlier.shape = NA) +
+  geom_text(aes(x = 1.5, y = 40, label = "*"),
+            size = 5) +
+  scale_fill_manual(values = c("P. napi" = "deepskyblue",
+                               "P. rapae" = "goldenrod1"),
+                    name = "Butterfly") +
+  labs (y = "Foliar temperature<br>(ºC)",
+        x = "Butterfly species") +
+  theme (text = element_text (size = 10),
+         axis.text.x = element_text (size = 10,
+                                     face = "italic"),
+         axis.title.y = element_markdown (size = 10),
+         legend.text = element_text(face = "italic"),
+         panel.border = element_rect (fill = NA)) +
+  scale_y_continuous(expand = expand_scale (mult = 0.1)))
 
 
-# c2: leaf side vs microhabitat temperature -------------------------------
+# C: daily tmax at the microhabitat level ---------------------------------
+(tmax.plot <- sensor %>%
+  mutate(site_patch = paste(site, microhabitat, sep = "_")) %>% 
+  group_by(site, microhabitat, sensor, winter_year, winter_jday) %>% 
+  summarise(tmean = mean(TEMP, na.rm = T),
+            tmax = max(TEMP, na.rm = T))%>% 
+  mutate(microhabitat = factor(microhabitat,
+                         levels = c("C", "SC", "SO", "O")),
+         site = if_else(site == "Ld", "Lowland", "Mid-elevation"),
+         site = factor(site,
+                       levels = c("Mid-elevation", "Lowland"))) %>% 
+  ungroup() %>% 
+  boxplot(x = microhabitat, y = tmax, fill = site, res = F, outlier.shape = NA) +
+  scale_fill_manual(aesthetics = c("fill", "color"),
+                    values = c("forestgreen", "darkorchid"),
+                    name = "Site") +
+  labs(x = "Microhabitat",
+       y = "Daily<br><i>T<sub>max</sub></i><br>(ºC)") +
+  theme(axis.title.y = element_markdown()))
 
-obvrev_temp <- data.leaves %>% 
-  mutate(dif_temp = obv_temp - rev_temp,
-         Microhabitat = factor(microhabitat,
+
+# D: foliar temperature ---------------------------------------------------
+(fol.temp.plot <- data.leaves %>% 
+  mutate(microhabitat = factor(microhabitat,
                                levels = c("C", "SC", "SO", "O")),
-         Microhabitat = if_else(Microhabitat %in% c("SO", "SC"),
-                                "SO+SC", microhabitat),
-         Microhabitat = factor(Microhabitat,
-                               levels = c("C", "SO+SC", "O"))) %>% 
-  filter(Microhabitat != "C", site == "AE",
-         !is.na(dif_temp), !is.na(SENS_TX)) 
-
-obvrev_fit <- obvrev_temp %>%
-  filter(Microhabitat == "O") %>% 
-  lm(dif_temp ~ poly(SENS_TX, 2), data = .) %>% 
-  glance() %>% 
-  mutate(rsq = round(r.squared, 2),
-         pval = if_else(p.value < 0.0001,
-                        "<0.0001",
-                        as.character(round(p.value, 2))),
-         fit = paste0("<i>R</i><sup>2</sup>=", rsq,
-                      ",<br><i>p</i>", pval))
+         Site = if_else(site == "CJ", "Mid-elevation", "Lowland"),
+         Site = factor(Site, levels = c("Mid-elevation", "Lowland"))) %>% 
+  boxplot(x = microhabitat, y = obv_temp, fill = Site, res = F,
+          outlier.shape = NA) +
+  scale_fill_manual(aesthetics = c("fill", "color"),
+                    values = c("forestgreen", "darkorchid")) +
+  guides(fill = "none", color = "none"))
 
 
-(obvrev_tmax <- obvrev_temp %>% 
-  ggplot(aes(x = SENS_TX, y = dif_temp, color = Microhabitat)) +
-  geom_point(alpha = 0.5, size = 0.5) +
-  geom_smooth(se = F, method = "lm", formula = y ~ poly(x, 2)) +
-  geom_richtext(aes(x = 19, y = 10, label = obvrev_fit$fit[1]),
-                fill = NA, label.color = NA, hjust = 0,
-                color = "goldenrod") +
-  scale_color_manual(values = c("SO+SC" = "deepskyblue",
-                                "O" = "goldenrod"),
-                     name = "Microhabitat") +
-  labs(x = "Microhab. Tmax (ºC)",
-       y = "Upper - Under (K)") +
-  guides(color = "none") +
-  theme(panel.background = element_rect(color = "black")))
-
-
-ggsave(filename = "figures/fig3_c2.svg",
-       plot = obvrev_tmax,
-       width = 5,
-       height = 5,
-       units = "cm",
-       dpi = 600)
-
-
-# c3: leaf - air ----------------------------------------------------------
-leafair <- data.leaves %>% 
-   left_join(data.plants) %>% 
-   mutate(Microhabitat = factor(microhabitat,
-                                levels = c("C", "SC", "SO", "O")),
-          Microhabitat = if_else(Microhabitat %in% c("SO", "SC"),
-                                 "SO+SC", microhabitat),
-          Microhabitat = factor(Microhabitat,
-                                levels = c("C", "SO+SC", "O")),
-          thermal_offset = obv_temp - air_temp) %>% 
-   filter(site == "AE", Microhabitat != "C")
-
-leafair.test <- leafair %>% 
-  lm(thermal_offset ~ Microhabitat, data = .) %>% 
-  glance() %>% 
-  mutate(ast = if_else(p.value <= 0.05, "*", ""))
-
-(leafair.plot <- leafair %>% 
-  ggplot(aes(y = thermal_offset, x = Microhabitat, fill = Microhabitat)) +
-  geom_boxplot(outlier.shape = NA) +
-  scale_fill_manual(values = c("deepskyblue", "goldenrod")) +
+# E: mean offset (microhabitat - macroclimate) ----------------------------
+(offset.plot <- sensor %>%
+  mutate(site_micro = paste(site, microhabitat, sep = "_")) %>% 
+  group_by(site, microhabitat, sensor, winter_year, winter_jday) %>% 
+  summarise(tmean = mean(TEMP, na.rm = T),
+            tmax = max(TEMP, na.rm = T))%>% 
+  left_join(meteo, by = c("site" = "Site", "winter_year" = "Year",
+                          "winter_jday" = "jday")) %>% 
+  mutate(mean_offset = tmean - TM,
+         max_offset = tmax - TX,
+         microhabitat = factor(microhabitat,
+                         levels = c("C", "SC", "SO", "O")),
+         site = if_else(site == "Ld", "Lowland", "Mid-elevation"),
+         site = factor(site,
+                       levels = c("Mid-elevation", "Lowland"))) %>% 
+  ungroup() %>% 
+  boxplot(x = microhabitat, y = mean_offset, fill = site, res = F,
+          outlier.shape = NA) +
   geom_hline(aes(yintercept = 0)) +
-  geom_text(x = 1.5, y = 15, label = leafair.test$ast[1]) +
-  labs(y = "Leaf - Air (K)") +
-  guides(fill = "none") +
-    theme (axis.title.x = element_blank(),
-           axis.text.x = element_blank(),
-           axis.ticks.x = element_blank(),
-           panel.background = element_rect(color = "black")))
+  scale_fill_manual(aesthetics = c("fill", "color"),
+                    values = c("forestgreen", "darkorchid"),
+                    name = "Site") +
+  labs(y = "Thermal<br>offset<br>(K)",
+       x = "Microhabitat") +
+  theme(axis.title.y = element_markdown()))
 
 
-ggsave(filename = "figures/fig3_c3.svg",
-       plot = leafair.plot,
-       width = 5,
-       height = 5,
-       units = "cm",
-       dpi = 600)
+
+# F: offset at foliar level (leaf - air) ----------------------------------
+(fol.offset.plot <- data.leaves %>% 
+  left_join(data.plants) %>% 
+  mutate(microhabitat = factor(microhabitat,
+                               levels = c("C", "SC", "SO", "O")),
+         thermal_offset = obv_temp - air_temp,
+         Site = if_else(site == "CJ", "Mid-elevation", "Lowland"),
+         Site = factor(Site, levels = c("Mid-elevation", "Lowland"))) %>% 
+  boxplot(y = thermal_offset, x = microhabitat, fill = Site, res = F,
+          outlier.shape = NA) +
+  scale_fill_manual(aesthetics = c("fill", "color"),
+                    values = c("forestgreen", "darkorchid")) +
+  geom_hline(aes(yintercept = 0)) +
+  guides(fill = "none", color = "none"))
+
+
+
+
+# G: Daily variability on microhabitat thermal profiles -------------------
+(sd.boxplot <- sensor %>%
+  mutate(site_microhabitat = paste(site, microhabitat, sep = "_")) %>% 
+  group_by(site, microhabitat, sensor, winter_year, winter_jday) %>% 
+  mutate(microhabitat = factor(microhabitat,
+                         levels = c("C", "SC", "SO", "O")),
+         site = if_else(site == "Ld", "Lowland", "Mid-elevation"),
+         site = factor(site,
+                       levels = c("Mid-elevation", "Lowland"))) %>% 
+  summarise(sd = sd(TEMP, na.rm = T)) %>% 
+  ungroup() %>% 
+  boxplot(x = microhabitat, y = sd, fill = site, res = F,
+          outlier.shape = NA, ymax = 15) +
+  scale_fill_manual(aesthetics = c("fill", "color"),
+                    values = c("forestgreen", "darkorchid"),
+                    name = "Site") +
+  labs(y = "Daily SD<br>of temperature<br>(K)",
+       x = "Microhabitat") +
+  ylim(0, 15) +
+  theme(axis.title.y = element_markdown()))
+
+
+# H: daily heterogeneity of foliar temperatures of the same micros --------
+(leafsd.plot <- data.leaves %>% 
+  pivot_longer(cols = c(obv_temp, rev_temp),
+               names_to = "side",
+               values_to = "leaf_temp") %>% 
+  mutate(microhabitat = factor(microhabitat,
+                               levels = c("C", "SC", "SO", "O")),
+         Site = if_else(site == "CJ", "Mid-elevation", "Lowland"),
+         Site = factor(Site, levels = c("Mid-elevation", "Lowland"))) %>%
+  group_by(Site, microhabitat, jday) %>% 
+  summarise(sd_leaf = sd(leaf_temp, na.rm = T)) %>% 
+  ungroup() %>% 
+  boxplot(y = sd_leaf, x = microhabitat, fill = Site, res = F,
+          outlier.shape = NA) +
+  scale_fill_manual(aesthetics = c("fill", "color"),
+                    values = c("forestgreen", "darkorchid")))
+
+
+# Figure assemblage -------------------------------------------------------
+(microclim <- ovi.plot + guides(fill = "none") +
+  fol.temp + labs(y = "Oviposition<br>temperature<br>(ºC)") +
+  tmax.plot + fol.temp.plot + labs(y = "Temperature<br>(ºC)",
+                                   x = "Microhabitat") +
+  offset.plot + fol.offset.plot + labs(y = "Thermal<br>offset<br>(K)",
+                                       x = "Microhabitat") +
+  sd.boxplot + leafsd.plot + labs(y = "Thermal<br>heterogeneity<br>(Daily SD, K)",
+                                  x = "Microhabitat") +
+  plot_layout(ncol = 2, guides = "collect") +
+  plot_annotation(tag_levels = "A") &
+  theme(text = element_text (size = 10),
+        plot.margin = margin (0, 10, 0, 5, "pt"),
+        panel.border = element_rect (fill = NA),
+        axis.title.y = element_markdown(angle = 90),
+        axis.text.y = element_text (size = 10),
+        plot.tag = element_text (size = 10,
+                                 face = "bold"),
+        plot.title = element_text(size = 12)))
+
+
+
+
+
+

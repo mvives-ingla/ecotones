@@ -1,16 +1,12 @@
 ############
-## Fig. 2 ##
+## Fig. 3 ##
 ############
-
 
 # Packages ----------------------------------------------------------------
 library(tidyverse)
 library(ggtext)
-library(patchwork)
-
-# Functions ---------------------------------------------------------------
-source("code/boxplot_ecotones_v11.R")
-source("code/result_bivar_in_subtitle.R")
+library(broom)
+library(readxl)
 
 
 # Data --------------------------------------------------------------------
@@ -18,95 +14,209 @@ source("code/result_bivar_in_subtitle.R")
 data.plants <- read.csv("data/data_plants.csv")
 ## Field campaign data at the foliar level
 data.leaves <- read.csv("data/data_leaves.csv")
+## Thermal records from the ground
+soilgrad <- read_excel ("data/feedbacks_united_2019.05.07.xlsx")
 
 
-# A: soil humidity boxplot -----------------------------------------------------------
-(soilhum.plot <- data.plants %>% 
-  mutate(Microhabitat = factor(microhabitat,
+theme_set(theme_classic())
+
+# b1: basal leaf - apical leaf --------------------------------------------
+dif_ba_data <- data.leaves %>%
+  filter(site == "AE") %>% 
+  left_join(data.plants) %>% 
+  group_by(site, microhabitat, jday) %>%
+  mutate(nleaftype = n_distinct(leaf_type)) %>%
+  filter (leaf_type %in% c("b", "m", "a"),
+          nleaftype == 3,
+          stem_length > 0) %>% 
+  group_by(site, microhabitat, jday, leaf_type, ind) %>% 
+  summarise(obv_temp = mean(obv_temp, na.rm = T)) %>%
+  pivot_wider(names_from = leaf_type,
+              values_from = obv_temp) %>% 
+  mutate(bm = b - m,
+         ba = b - a,
+         ma =  m - a) %>% 
+  pivot_longer(cols = bm:ma,
+               names_to = "diff_type",
+               values_to = "diff_obv_temp") %>% 
+  filter(diff_type == "ba", !is.na(diff_obv_temp)) %>% 
+  mutate(
+    Microhabitat = factor(microhabitat,
+                          levels = c("C", "SC", "SO", "O")),
+    Microhabitat = if_else(microhabitat %in% c("SO", "SC"),
+                           "SO+SC", microhabitat),
+    Microhabitat = factor(Microhabitat,
+                          levels = c("C", "SO+SC", "O"))
+  ) %>% 
+  filter(Microhabitat != "C")
+
+dif_ba_test <- dif_ba_data %>% 
+  lm(diff_obv_temp ~ Microhabitat, data = .) %>% 
+  # tidy() %>% 
+  # filter(term == "MicrohabitatO") %>% 
+  glance() %>% 
+  mutate(pval = if_else(round(p.value, 2)<= 0.05, "*", "")) %>% 
+  select(pval) %>% 
+  unlist()
+  
+
+(dif_ba_plot <- dif_ba_data %>%
+  ggplot(aes(x = Microhabitat, y = diff_obv_temp, fill = Microhabitat)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_text(aes(x = 1.5, y = 6, label = dif_ba_test)) +
+  scale_fill_manual(values = c("deepskyblue", "goldenrod")) +
+  scale_y_continuous(breaks = c(0, 5), limits = c(-4, 6)) +
+  labs(y = "Basal - Apical (K)") +
+  guides(fill = "none") +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        panel.background = element_rect(color = "black")))
+
+ggsave(filename = "figures/fig4_b1.svg",
+       plot = dif_ba_plot,
+       width = 5,
+       height = 5,
+       units = "cm",
+       dpi = 600)
+
+
+
+# b2: temperature change from the ground ----------------------------------
+
+soilabs_model <- soilgrad %>%
+  filter(site == "AE", rad == "R", wind == "NW")  %>% 
+  lm (formula =  temp ~ sinh (0.1*(100 - height)), data = .) %>% 
+  summary() %>% 
+  glance() %>% 
+  select(r.squared, p.value) %>% 
+  mutate(rsq = round(r.squared, 2),
+         pval = round(p.value, 4)) %>% 
+  mutate (pval = if_else(pval == 0, "<0.0001", paste ("=", pval)),
+          lab = paste0("*R*<sup>2</sup>=", rsq, "<br>*p*", pval))  
+
+
+(soilabs_plot <- soilgrad %>%
+  filter((site == "AE"))  %>% 
+  unite (col = "rad_wind", rad, wind, sep = "+", remove = F) %>% 
+  mutate (rad_wind = factor (rad_wind,
+                             levels = c("R+NW", "NR+W"))) %>% 
+  filter (!is.na (rad_wind)) %>% 
+  ggplot (aes (y = temp, x = height)) +
+  geom_point (aes (color = rad_wind), size = 0.7, alpha = 0.35) +
+  geom_smooth (aes (color = rad_wind, fill = rad_wind),
+               method = "lm",
+               formula = y ~ sinh (0.1*(100 - x))) +
+  scale_color_manual (aesthetics = c("colour", "fill"),
+                      values = c ("goldenrod", "deepskyblue"))  +
+    geom_richtext(x = 102,
+                  y = 47,
+                  label = soilabs_model$lab[1],
+                  hjust = 1,
+                  vjust = 1,
+                  color = "goldenrod",
+                  label.color = NA) +
+  labs (y = "Temperature (ºC)",
+        x = "Height (cm)") +
+  guides(color = "none", fill = "none") +
+  coord_flip() +
+  theme (axis.title.x = element_blank(),
+         axis.text.x = element_blank(),
+         axis.ticks.x = element_blank(),
+         panel.background = element_rect(color = "black")))
+
+ggsave(filename = "figures/fig4_b2.svg",
+       plot = soilabs_plot,
+       width = 5,
+       height = 5,
+       units = "cm",
+       dpi = 600)
+
+
+# c2: leaf side vs microhabitat temperature -------------------------------
+
+obvrev_temp <- data.leaves %>% 
+  mutate(dif_temp = obv_temp - rev_temp,
+         Microhabitat = factor(microhabitat,
                                levels = c("C", "SC", "SO", "O")),
-         Site = if_else(site == "AE", "Lowland", "Mid-elevation"),
-         Site = factor(Site, levels = c("Mid-elevation",
-                                        "Lowland"))) %>% 
-  boxplot(x = Microhabitat, y = soil_hum_org, fill = Site,
-          outlier.shape = NA, res = F) +
-   guides(color = "none")) 
+         Microhabitat = if_else(Microhabitat %in% c("SO", "SC"),
+                                "SO+SC", microhabitat),
+         Microhabitat = factor(Microhabitat,
+                               levels = c("C", "SO+SC", "O"))) %>% 
+  filter(Microhabitat != "C", site == "AE",
+         !is.na(dif_temp), !is.na(SENS_TX)) 
+
+obvrev_fit <- obvrev_temp %>%
+  filter(Microhabitat == "O") %>% 
+  lm(dif_temp ~ poly(SENS_TX, 2), data = .) %>% 
+  glance() %>% 
+  mutate(rsq = round(r.squared, 2),
+         pval = if_else(p.value < 0.0001,
+                        "<0.0001",
+                        as.character(round(p.value, 2))),
+         fit = paste0("<i>R</i><sup>2</sup>=", rsq,
+                      ",<br><i>p</i>", pval))
 
 
-# B+C: soil humidity trend ------------------------------------------------
-(soilhum.trend <- data.plants %>%
-  mutate(microhabitat = factor(microhabitat,
-                               levels = c("C", "SC", "SO", "O"))) %>% 
-  filter(microhabitat != "C") %>% 
-  split(.$species) %>% 
-  map(~ ggplot(data = .x, aes(x = jday, y = soil_hum_org, color = microhabitat)) +
-        geom_point(size = 0.5) +
-        geom_smooth(aes(linetype = microhabitat), se = F, span = 1) +
-        scale_color_manual(values = c("deepskyblue", "deepskyblue", "goldenrod")) +
-        scale_linetype_manual(values = c("dashed", "solid", "solid")) +
-        scale_x_continuous(breaks = seq(60, 300, by = 60)) +
-        labs(y = "Soil<br>humidity<br>(%)",
-             x = "Julian day") +
-        theme_classic() +
-        theme(text = element_text(size = 10),
-              plot.margin = margin(0, 10, 0, 5, "pt"),
-              panel.border = element_rect(fill = NA),
-              axis.title.x = element_text(size = 10),
-              axis.title.y = element_markdown(angle = 90, size = 10),
-              axis.text.y = element_text (size = 10))))
-
-# D: foliar water content boxplot --------------------------------------------
-(wat.cont.plot <- data.leaves %>%
-  mutate(Microhabitat = factor(microhabitat,
-                               levels = c("C", "SC", "SO", "O")),
-         Site = if_else(site == "AE", "Lowland", "Mid-elevation"),
-         Site = factor(Site, levels = c("Mid-elevation",
-                                        "Lowland"))) %>%
-  filter(phenology != "sen",
-         leaf_state == "green") %>%
-  boxplot(y = water_content, ymax = 12, x = Microhabitat,
-          fill = Site, outlier.shape = NA, res = F) +
-  ylim(1, 12) +
-   guides(color = "none"))
+(obvrev_tmax <- obvrev_temp %>% 
+  ggplot(aes(x = SENS_TX, y = dif_temp, color = Microhabitat)) +
+  geom_point(alpha = 0.5, size = 0.5) +
+  geom_smooth(se = F, method = "lm", formula = y ~ poly(x, 2)) +
+  geom_richtext(aes(x = 19, y = 10, label = obvrev_fit$fit[1]),
+                fill = NA, label.color = NA, hjust = 0,
+                color = "goldenrod") +
+  scale_color_manual(values = c("SO+SC" = "deepskyblue",
+                                "O" = "goldenrod"),
+                     name = "Microhabitat") +
+  labs(x = "Microhab. Tmax (ºC)",
+       y = "Upper - Under (K)") +
+  guides(color = "none") +
+  theme(panel.background = element_rect(color = "black")))
 
 
-# E+F: water content trend ------------------------------------------------
-(wat.cont.trend <- data.leaves %>%
-  mutate(microhabitat = factor(microhabitat,
-                               levels = c("C", "SC", "SO", "O"))) %>% 
-  unite ("micro_phase", microhabitat, cycle_phase, remove = F) %>% 
-  filter(microhabitat != "C") %>% 
-  split(.$species) %>% 
-  map(~ ggplot(data = .x, aes(x = jday, y = water_content, color = microhabitat,
-                              group = micro_phase)) +
-        geom_point(size = 0.5) +
-        geom_smooth(aes(linetype = microhabitat), se = F, span = 1) +
-        scale_color_manual(values = c("deepskyblue", "deepskyblue", "goldenrod")) +
-        scale_linetype_manual(values = c("dashed", "solid", "solid")) +
-        scale_x_continuous(breaks = seq(60, 300, by = 60)) +
-        labs(y = "Foliar water<br>content<br>(g g<sup>-1</sup> DW)",
-             x = "Julian day") +
-        theme_classic()))
+ggsave(filename = "figures/fig4_c2.svg",
+       plot = obvrev_tmax,
+       width = 5,
+       height = 5,
+       units = "cm",
+       dpi = 600)
 
-# assemblage --------------------------------------------------------------
 
-(Fig.hostplant <- soilhum.plot + labs(y = "Soil<br>humidity<br>(%)",
-                      x = NULL) +
-  wat.cont.plot + labs(y = "Foliar water<br>content<br>(g g<sup>-1</sup> DW)",
-                       x = "Microhabitat") +
-  soilhum.trend$`Alliaria petiolata` + labs(x = NULL) +
-  wat.cont.trend$`Alliaria petiolata` + 
-  soilhum.trend$`Lepidium draba` + labs(x = NULL) +
-  wat.cont.trend$`Lepidium draba` + 
-  plot_layout(ncol = 3, byrow = F, guides = "collect") +
-  plot_annotation(tag_levels = "A") &
-  theme(text = element_text(size = 10),
-        plot.margin = margin(0, 10, 0, 5, "pt"),
-        panel.border = element_rect(fill = NA),
-        plot.title = element_text(size = 10, face = "italic"),
-        axis.title.x = element_text(size = 10),
-        axis.title.y = element_markdown(angle = 90, size = 10),
-        axis.text.y = element_text (size = 10),
-        plot.tag = element_text (size = 10,
-                                 face = "bold"),
-        legend.position = "bottom"))
+# c3: leaf - air ----------------------------------------------------------
+leafair <- data.leaves %>% 
+   left_join(data.plants) %>% 
+   mutate(Microhabitat = factor(microhabitat,
+                                levels = c("C", "SC", "SO", "O")),
+          Microhabitat = if_else(Microhabitat %in% c("SO", "SC"),
+                                 "SO+SC", microhabitat),
+          Microhabitat = factor(Microhabitat,
+                                levels = c("C", "SO+SC", "O")),
+          thermal_offset = obv_temp - air_temp) %>% 
+   filter(site == "AE", Microhabitat != "C")
 
+leafair.test <- leafair %>% 
+  lm(thermal_offset ~ Microhabitat, data = .) %>% 
+  glance() %>% 
+  mutate(ast = if_else(p.value <= 0.05, "*", ""))
+
+(leafair.plot <- leafair %>% 
+  ggplot(aes(y = thermal_offset, x = Microhabitat, fill = Microhabitat)) +
+  geom_boxplot(outlier.shape = NA) +
+  scale_fill_manual(values = c("deepskyblue", "goldenrod")) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_text(x = 1.5, y = 15, label = leafair.test$ast[1]) +
+  labs(y = "Leaf - Air (K)") +
+  guides(fill = "none") +
+    theme (axis.title.x = element_blank(),
+           axis.text.x = element_blank(),
+           axis.ticks.x = element_blank(),
+           panel.background = element_rect(color = "black")))
+
+
+ggsave(filename = "figures/fig4_c3.svg",
+       plot = leafair.plot,
+       width = 5,
+       height = 5,
+       units = "cm",
+       dpi = 600)
