@@ -1443,16 +1443,16 @@ tdtreal <- data.frame(sp = c("PN", "PR"),
                               breaks = seq(from = 37.5,
                                            to = 45,
                                            by = 2.5),
-                              # guide = guide_colorbar(direction = "vertical",
-                              #                        title.position = "top",
-                              #                        ticks.colour = "black",
-                              #                        ticks.linewidth = 0.7,
-                              #                        draw.ulim = F,
-                              #                        draw.llim = F)) +
-                              guide = guide_bins(direction = "vertical",
-                                                title.position = "top",
-                                                show.limits = T,
-                                                reverse = T)) +
+                              guide = guide_colorbar(direction = "vertical",
+                                                     title.position = "top",
+                                                     ticks.colour = "black",
+                                                     ticks.linewidth = 0.7,
+                                                     draw.ulim = F,
+                                                     draw.llim = F)) +
+                              # guide = guide_bins(direction = "vertical",
+                              #                   title.position = "top",
+                              #                   show.limits = T,
+                              #                   reverse = T)) +
          geom_line(data = .x, aes(x = daily_hour, y = ta.min,
                                   color = sensor)) +
                                   # linetype = sensor)) +
@@ -1465,7 +1465,8 @@ tdtreal <- data.frame(sp = c("PN", "PR"),
          # scale_linetype_manual(values = c(1, 3, 5),
          #                       name = "Sensor") +
          scale_color_manual(values = grey_pal(start = 0,
-                                              end = 0.6)(3)) +
+                                              end = 0.6)(3),
+                            name = "Sensor") +
          guides(size = "none") +
          scale_y_continuous(breaks = breaks_pretty(n = 3)) +
          scale_x_continuous(breaks = seq(0, 24, by = 6),
@@ -1521,11 +1522,11 @@ tdtreal <- data.frame(sp = c("PN", "PR"),
                  strip.background = element_blank(),
                  strip.text = element_blank())) %>% 
   map2(list(grey_pal(start = 0,
-                     end = 0.6)(3)[c(2, 3)],
+                     end = 0.6)(3)[c(1, 3)],
             grey_pal(start = 0,
                      end = 0.6)(3)[c(2, 3)],
             grey_pal(start = 0,
-                     end = 0.6)(3)[c(1, 3)]),
+                     end = 0.6)(3)[c(2, 3)]),
     #list(c(3, 5), c(3, 5), c(1, 5)),
        ~ .x +
          scale_color_manual(values = .y, guide = "none")))
