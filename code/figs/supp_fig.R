@@ -19,8 +19,8 @@ library(ggdist)
 
 
 # functions ---------------------------------------------------------------
-source("code/boxplot_ecotones_v11.R")
-source("code/result_bivar_in_subtitle.R")
+source("code/figs/boxplot_ecotones_v11.R")
+source("code/figs/result_bivar_in_subtitle.R")
 
 
 # data --------------------------------------------------------------------
@@ -83,7 +83,7 @@ cn.gr.data <- data.microh %>%
           herb = case_when ((microhabitat == "SO" | microhabitat == "O") ~ hei_ground_cover,
                             TRUE ~ NA_real_),
           microhabitat = factor (microhabitat, levels = c ("C", "SC", "SO", "O"))) %>% 
-  select (species, microhabitat, jday, herb, canopy) %>% 
+  dplyr::select (species, microhabitat, jday, herb, canopy) %>% 
   split (.$species)
 
 (cn.gr.plot <- data.microh %>% 
@@ -104,9 +104,9 @@ cn.gr.data <- data.microh %>%
       outlier.shape = NA) %>% 
   map(~ .x +
         scale_y_continuous (limits = c(0, 100),
-                            name = "Canopy cover [%]",
+                            name = "Canopy cover (%)",
                             sec.axis = sec_axis (~.*1,
-                                                 name = "Herb height [cm]")) +
+                                                 name = "Herb height (cm)")) +
         scale_x_discrete(name = "Microhabitat") +
         geom_vline (aes (xintercept = 2.5),
                     linetype = "dashed")))
@@ -124,10 +124,10 @@ cn.gr.data <- data.microh %>%
                       se = F,
                       linetype = "dashed") +
          scale_y_continuous (limits = c(0, 100),
-                             name = "Canopy cover [%]",
+                             name = "Canopy cover (%)",
                              sec.axis = sec_axis (~.*1,
-                                                  name = "Herb height [cm]")) +
-         scale_x_continuous (name = "Julian day",
+                                                  name = "Herb height (cm)")) +
+         scale_x_continuous (name = "Ordinal day",
                              breaks = seq (from = 60, to = 300, by = 60)) +
          scale_color_manual (name = "Microhabitat",
                              values = heat_hcl (4,
@@ -142,7 +142,9 @@ cn.gr.data <- data.microh %>%
 (FigS3 <- cn.gr.plot [["Alliaria petiolata"]] + cn.gr.trend [["Alliaria petiolata"]] +
   cn.gr.plot [["Lepidium draba"]] + cn.gr.trend [["Lepidium draba"]] +
   plot_layout (ncol = 2, guides = "collect") +
-  plot_annotation(tag_levels = "A") &
+  plot_annotation(tag_levels = "a",
+                  tag_prefix = "(",
+                  tag_suffix = ")") &
   theme (text = element_text (size = 10),
          plot.tag = element_text (size = 10,
                                   face = "bold"),
@@ -167,7 +169,7 @@ source("code/ovip_models.R")
                       labels = c("spring plants", "summer resprout"),
                       name = "Plant stage") +
    geom_smooth(se = F, color = "black") +
-   labs(x = "Julian day",
+   labs(x = "Ordinal day",
         y = "Soil\ntemperature\n(ºC)"))
 
 (microhtemp <- data.leaves %>% 
@@ -184,7 +186,7 @@ source("code/ovip_models.R")
                       labels = c("spring plants", "summer resprout"),
                       name = "Plant stage") +
    geom_smooth(se = F, aes(shape = NULL), color = "black") +
-   labs(x = "Julian day",
+   labs(x = "Ordinal day",
         y = "Microhabitat<br>air <i>T<sub>max</sub></i><br>(ºC)") +
    theme(axis.title.y = element_markdown()))
 
@@ -207,7 +209,7 @@ th <- data.frame(th = seq(from = 35, to = 45, by = 2.5))
                        name = "Plant stage") +
     scale_color_gradientn(colours = heat.colors(50, rev = T),
                           name = "TAB\nthreshold\n(ºC)") +
-    labs(x = "Julian day",
+    labs(x = "Ordinal day",
          y = "Foliar\ntemperature\n(ºC)"))
 
 ## thermal heterogeneity
@@ -230,7 +232,7 @@ th <- data.frame(th = seq(from = 35, to = 45, by = 2.5))
                       labels = c("spring plants", "summer resprout"),
                       name = "Plant stage") +
    geom_smooth(se = F, color = "black", method = "lm") +
-   labs(x = "Julian day",
+   labs(x = "Ordinal day",
         y = "Foliar thermal\nheterogeneity\n(Daily SD, K)"))
 
 ## thermal offset (leaf-air)
@@ -249,14 +251,18 @@ th <- data.frame(th = seq(from = 35, to = 45, by = 2.5))
     geom_point(alpha = 0.5) +
     geom_smooth(se = F, method = "lm", color = "black") +
     labs(y = "Thermal offset\n(leaf - air,\nK)",
-         x = "Julian day"))
+         x = "Ordinal day"))
 
 (temppattern <- soiltemp + microhtemp + leaftemp + sdleaf + offset +
     plot_layout(ncol = 1, guides = "collect") +
-    plot_annotation(tag_levels = "A"))
+    plot_annotation(tag_levels = "a",
+                    tag_prefix = "(",
+                    tag_suffix = ")"))
 
 (temppattern <- temppattern & scale_x_continuous(limits = c(70, 300),
                                  breaks = seq(90, 300, by = 60)))
+
+
 
 
 # Fig. S6&S7: seasonal patterns -------------------------------------------
@@ -779,13 +785,21 @@ sk.reg.fit <- fullmort %>%
 (skewsd.plot <- (sk.dens + guides(color = "none")) /
   sk.reg +
   plot_layout(guides = "collect") +
-  plot_annotation(tag_levels = "A") &
+  plot_annotation(tag_levels = "a",
+                  tag_prefix = "(",
+                  tag_suffix = ")") &
   theme(plot.title = element_text(size = 11),
         plot.subtitle = element_markdown(size = 11),
         strip.text = element_markdown(size = 11),
+        strip.background = element_rect(color = NA),
         axis.title = element_text(size = 11)))
 
-
+ggsave(filename = "../../figures/skew_sd_plot_v5.png",
+       plot = skewsd.plot,
+       height = 15,
+       width = 15,
+       units = "cm",
+       dpi = 600)
 
 # Fig. S9: details of thermal heterogeneity -------------------------------
 pal <- sequential_hcl(n = 2,
@@ -830,11 +844,11 @@ boxdata.678 <- data.microh %>%
 
 (boxplot.678 <- boxdata.678 %>% 
   map(boxplot, x = measure, y = temp, res = F,
-      outlier.shape = NA, ymax = 55)) %>% 
-  map2 (pal,
+      outlier.shape = NA, ymax = 55) %>% 
+  map2(pal,
         ~ .x + 
-          geom_boxplot (outlier.shape = NA, fill = .y) +
-         geom_vline (aes (xintercept = 1.5)) +
+        geom_boxplot (outlier.shape = NA, fill = .y) +
+        geom_vline (aes (xintercept = 1.5)) +
          labs (x = NULL,
                y = "Temperature (ºC)",
                title = NULL) +
@@ -846,7 +860,7 @@ boxdata.678 <- data.microh %>%
                                        obv_temp = "Leaf upperside",
                                        air_temp = "Air [100 cm]",
                                        METCAT_TX = "Air [150 cm]")) +
-         theme(axis.text.x = element_text(angle = 30, hjust = 1)))
+         theme(axis.text.x = element_text(angle = 30, hjust = 1))))
 
 ## C: thermal gradient from the ground
 
@@ -870,7 +884,7 @@ soilabs.model <- soilgrad %>%
                   ~ round(.x, .y))) %>%
   bind_rows(.id = "group") %>% 
   mutate (pval = if_else(pval == 0, "< 0.0001", paste ("=", pval)),
-          lab = paste0(group, ": *R*<sup>2</sup> = ", rsq, ", *p* ", pval))  
+          lab = paste0(group, ": *R*<sup>2</sup> = ", rsq, ", *P* ", pval))  
 
 
 fit.compl <- str_c(soilabs.model$lab, collapse = "<br>")
@@ -994,7 +1008,7 @@ obvrev_tmax_fit <- data.leaves %>%
                                                "< 0.0001",
                                                as.character(round(p.value, 2))),
                                 fit = paste0("<i>R</i><sup>2</sup> = ", rsq,
-                                             ", <i>p</i> ", pval))),
+                                             ", <i>P</i> ", pval))),
          fit = map(fit, dplyr::select, fit),
          fit = map(fit, as.character)) %>% 
   unnest(fit) %>% 
@@ -1039,13 +1053,51 @@ obvrev_tmax_fit <- data.leaves %>%
                                                 element_markdown()) +
   obvrev_boxplot + guides(fill = "none") +
   obvrev_tmax + 
-  plot_annotation(tag_levels = "A") +
+  plot_annotation(tag_levels = "a",
+                  tag_prefix = "(",
+                  tag_suffix = ")") +
   plot_layout(ncol = 2, guides = "collect") &
   theme(legend.position = "bottom",
         plot.title = element_text(size = 10)))
 
 
-# Fig. S10: trends in the host plant variables ---------------------------------
+
+# Fig. S10: host-plant fruits ---------------------------------------------
+
+(fruits.plot <- data.fruits %>%  
+   mutate(microhabitat = factor(microhabitat,
+                                levels = c("C", "SC", "SO", "O"))) %>% 
+   filter(n_fruits < 500) %>% 
+   split (.$species) %>% 
+   map(boxplot,
+       x = microhabitat,
+       y = "n_fruits",
+       outlier.shape = NA))
+
+(FigS10 <- fruits.plot [["Alliaria petiolata"]] + labs (y = "Number of<br>fruits",
+                                                        x = NULL,
+                                                        title = "Alliaria petiolata") +
+    fruits.plot [["Lepidium draba"]]  + labs (y = "Number of<br>fruits",
+                                              x = NULL,
+                                              title = "Lepidium draba") +
+    plot_annotation (tag_levels = "a",
+                     tag_prefix = "(",
+                     tag_suffix = ")") +
+    plot_layout (ncol = 2) &
+    theme (text = element_text (size = 10),
+           panel.border = element_rect (fill = NA),
+           plot.margin = margin (5, 20, 5, 5, "pt"),
+           plot.title = element_text (size = 10,
+                                      face = "italic"),
+           axis.title.y = element_markdown (size = 10,
+                                            angle = 90),
+           axis.text = element_text (size = 10),
+           plot.tag = element_text (size = 10, 
+                                    face = "bold")))
+
+
+
+# Fig. S11: trends in the host plant variables ---------------------------------
 (soilsurf.trend <- data.microh %>% 
   mutate(microhabitat = factor(microhabitat,
                                levels = c("C", "SC", "SO", "O"))) %>% 
@@ -1230,36 +1282,7 @@ Fig.trends[[12]] <- Fig.trends[[12]] + theme(axis.title.x = element_text(size = 
 
 
 
-# Fig. S11: host-plant fruits ---------------------------------------------
 
-(fruits.plot <- data.fruits %>%  
-   mutate(microhabitat = factor(microhabitat,
-                                levels = c("C", "SC", "SO", "O"))) %>% 
-   filter(n_fruits < 500) %>% 
-  split (.$species) %>% 
-  map(boxplot,
-      x = microhabitat,
-      y = "n_fruits",
-      outlier.shape = NA))
-
-(FigS11 <- fruits.plot [["Alliaria petiolata"]] + labs (y = "Number of<br>fruits",
-                                                      x = NULL,
-                                                      title = "Alliaria petiolata") +
-  fruits.plot [["Lepidium draba"]]  + labs (y = "Number of<br>fruits",
-                                            x = NULL,
-                                            title = "Lepidium draba") +
-  plot_annotation (tag_levels = "A") +
-  plot_layout (ncol = 2) &
-  theme (text = element_text (size = 10),
-         panel.border = element_rect (fill = NA),
-         plot.margin = margin (5, 20, 5, 5, "pt"),
-         plot.title = element_text (size = 10,
-                                    face = "italic"),
-         axis.title.y = element_markdown (size = 10,
-                                          angle = 90),
-         axis.text = element_text (size = 10),
-         plot.tag = element_text (size = 10, 
-                                  face = "bold")))
 
 
 # Fig. S12: Phenology -----------------------------------------------------
@@ -1533,9 +1556,9 @@ tdtreal <- data.frame(sp = c("PN", "PR"),
 
 
 
-(examp.plot <- examp.temp$`229` + labs(tag = "A") + examp.mort$`229`  +
-  examp.temp$`217` + labs(tag = "B") + examp.mort$`217` +
-    examp.temp$`168` + labs( tag = "C") + examp.mort$`168` +
+(examp.plot <- examp.temp$`229` + labs(tag = "(a)") + examp.mort$`229`  +
+  examp.temp$`217` + labs(tag = "(b)") + examp.mort$`217` +
+    examp.temp$`168` + labs( tag = "(c)") + examp.mort$`168` +
     plot_layout(guides = "collect", ncol = 2) &
     theme(axis.title.x = element_text(size = 10),
           axis.title.y = element_text(size = 10),
@@ -1546,7 +1569,7 @@ tdtreal <- data.frame(sp = c("PN", "PR"),
 
 # Fig. S15: field mortality -----------------------------------------------
 sp <- c("P. napi", "P. rapae")
-labs <- paste0("<i>", sp, "</i>", " ovipositing sites")
+labs <- c("Semi-open and semi-closed microhabitats", "Open microhabitats")
 names(labs) <- sp
 
 ## A: Daily mortality
@@ -1578,7 +1601,7 @@ names(labs) <- sp
                 fontface = "italic", vjust = 0, hjust = -1),
             color = "gray60") +
   labs(y = "Daily mortality",
-       x = "Julian day") +
+       x = "Ordinal day") +
   facet_wrap(facets = vars(sp_comp), ncol = 2,
              labeller = labeller(sp_comp = labs)) +
   scale_x_continuous(breaks = seq(from = 60, to = 240, by = 60)) +
@@ -1638,7 +1661,7 @@ names(labs) <- sp
                               override.aes =list(fill = NA),
                               position = "bottom"),
          fill = "none") +
-  labs(x = "Julian day",
+  labs(x = "Ordinal day",
        y = "Cumulative mortality\nduring development") +
   theme_classic() +
   theme(strip.text = element_markdown(),
@@ -1649,10 +1672,175 @@ names(labs) <- sp
 (fieldmort.plot <- dailymort + dvtmort + 
   plot_layout(ncol = 1) +
               # guides = "collect") +
-  plot_annotation(tag_levels = "A")) #&
+  plot_annotation(tag_levels = "a",
+                  tag_prefix = "(",
+                  tag_suffix = ")")) #&
     # theme(legend.position = "bottom"))
 
 
+
+# Fig. S16: development times ---------------------------------------------
+
+
+## Packages
+library(viridis)
+library(lubridate)
+
+# Taken from von Schmalensee, Loke et al. (2021),
+# Thermal performance under constant temperatures can accurately predict insect development times across naturally variable microclimates,
+# Dryad, Dataset, https://doi.org/10.5061/dryad.gtht76hm5
+## Specify the Ratkowsky thermal performance function (where any temperatures below tmin or above tmax results in no development)
+Ratkowsky <- function(temp, tmin, tmax, a, b) {
+  
+  devr <- ifelse(temp >= tmax|temp <= tmin,
+                 0,
+                 ((a * (temp - tmin)) * (1 - exp(b * (temp - tmax))))^2)
+  
+  return(devr)
+}
+
+
+
+## Assign the estimated parameter values (TPC_fitting.R) for the nonlinear ontogeny model
+tmin_ont_nonlinear  <- -0.6484458
+tmax_ont_nonlinear  <- 36.21554
+a_ont_nonlinear     <- 0.009990053
+b_ont_nonlinear     <- 0.3498014
+
+
+
+## Write the function for that describes the ontogenetic development rate as a nonlinear (Ratkowsky) function of temperature
+ontogeny_nonlinear <- function(x){(Ratkowsky(temp=x,
+                                             tmin=tmin_ont_nonlinear,
+                                             tmax=tmax_ont_nonlinear,
+                                             a=a_ont_nonlinear,
+                                             b=b_ont_nonlinear))}
+
+
+# Own part of the script
+
+count_dvt_days <- function(dvt_series) {
+  
+  time_zero <- c()
+  time_last <- c()
+  dvt_time <- c()
+  
+  
+  for(i in seq_along(dvt_series$hourly_prop_ont)) {
+    
+    filtered_dvt <- dvt_series[i:(nrow(dvt_series)),]
+    filtered_dvt <- filtered_dvt %>% 
+      mutate(cumdvt = cumsum(hourly_prop_ont))
+    
+    if(any(filtered_dvt$cumdvt >= 1)) {
+      filtered_dvt <- filtered_dvt %>% 
+        filter(cumdvt < 1) %>% 
+        slice_tail(n = 1)
+      
+      time_zero <- days(x = dvt_series$winter_jday[i]) + hours(x = dvt_series$winter_hour[i])
+      time_last <- days(x = filtered_dvt$winter_jday[1]) + hours(x = filtered_dvt$winter_hour[1] + 1)
+      dvt_time[i] <- period_to_seconds(time_last - time_zero)/60/60/24
+      
+    } 
+    
+    
+    
+  }
+  return(dvt_time)
+}
+
+dvt <- sensor %>% 
+  filter(!is.na(microhabitat)) %>% 
+  mutate(hourly_prop_ont = ontogeny_nonlinear(x = TEMP)/24,
+         season = if_else(winter_month < 6, "Mar-May", "Jun-Sep")) %>% 
+  nest(dvt_series = -c(sensor, winter_year, season)) %>% 
+  mutate(dvt_time = map(dvt_series,
+                        ~ count_dvt_days(dvt_series = .)))
+
+
+
+
+
+
+order_sensor <- sensor_patch %>% 
+  mutate(microhabitat = factor(microhabitat,
+                         levels = c("C", "SC", "SO", "O"))) %>% 
+  arrange(microhabitat, site) %>% 
+  select(sensor, site) %>% 
+  mutate(sensor_site = paste0(sensor, " (", site, ")"))
+
+median_dvt <- dvt %>% 
+  left_join(sensor_patch) %>% 
+  unnest(dvt_time) %>% 
+  filter(!is.na(sensor)) %>% 
+  mutate(season = factor(season,
+                         levels = c("Mar-May", "Jun-Sep"))) %>% 
+  group_by(site, season, microhabitat) %>% 
+  summarise(med_dvt = median(dvt_time, na.rm = T)) %>% 
+  ungroup() %>% 
+  mutate(y = c(1, 6, 3, 4, 1, 6, 3, 4, 1, 6, 2, 4, 1, 6, 2, 4),
+         yend = c(2.5, 8.5, 3.5, 5.5, 2.5, 8.5, 3.5, 5.5, 1.5, 7.5, 3.5, 5.5, 1.5, 7.5, 3.5, 5.5))
+
+
+(dvt_plot <- dvt %>% 
+    left_join(sensor_patch) %>% 
+    unnest(dvt_time) %>% 
+    filter(!is.na(sensor)) %>% 
+    mutate(sensor = factor(sensor,
+                           levels = order_sensor$sensor),
+           microhabitat = factor(microhabitat,
+                           levels = c("C", "SC", "SO", "O")),
+           season = factor(season,
+                           levels = c("Mar-May", "Jun-Sep"))) %>% 
+    ggplot(aes(y = sensor, x = dvt_time, fill = microhabitat, color = microhabitat)) +
+    stat_halfeye(aes(slab_color = microhabitat),
+                 slab_size = .75,
+                 alpha = .5,
+                 normalize = "groups",
+                 position = position_dodge(width = 1),
+                 height = .8,
+                 justification = -.1,
+                 .width = 0,
+                 point_colour = NA) +
+    scale_color_viridis_d(aesthetics = c("color", "fill", "slab_color"),
+                          name = "Microhabitat",
+                          labels = c("Closed", "Semi-closed", "Semi-open", "Open"),
+                          guide = guide_legend(order = 1,
+                                               label.hjust = .5,
+                                               label.vjust = .5,
+                                               title.hjust = .5,
+                                               reverse = T,
+                                               direction = "vertical",
+                                               override.aes = list(color = NA,
+                                                                   slab_color = "white",
+                                                                   alpha = 1))) +
+    stat_interval(aes(color_ramp = stat(level)),
+                  .width = c(.25, .5, .75, 1),
+                  position = position_dodgejust(width = 1),
+                  # width = .75,
+                  justification = .5) +
+    geom_segment(data = median_dvt, aes(x = med_dvt, xend = med_dvt,
+                                        y = y, yend = yend, color = microhabitat),
+                 size = 1.5) +
+    scale_color_ramp_discrete(name = "Confidence interval",
+                              labels = c("100%", "75%", "50%", "25%"),
+                              guide = guide_legend(order = 2,
+                                                   title.position = "top",
+                                                   label.position = "top",
+                                                   title.hjust = .5,
+                                                   label.hjust = .5,
+                                                   direction = "horizontal",
+                                                   reverse = T,
+                                                   override.aes = list(color = viridis(begin = .5,
+                                                                                       n = 1))))  +
+    facet_grid(site ~ season, scales = "free",
+               labeller = labeller(site = c(Me = "Mid-elevation", Ld = "Lowland"))) +
+    labs(x = "Predicted development time (days)",
+         y = "Sensor code") +
+    theme_classic() +
+    theme(strip.background = element_rect(color = NA),
+          legend.position = "bottom",
+          legend.box.just = "center"))
 
 
 

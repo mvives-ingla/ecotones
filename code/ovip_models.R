@@ -6,6 +6,7 @@
 # packages ----------------------------------------------------------------
 library (tidyverse)
 library (lme4)
+library(performance)
 
 
 # data --------------------------------------------------------------------
@@ -26,7 +27,7 @@ mod1 <- glmer (n_ovi ~
                  (1 | jday_cat) +
                  (1 | site) +
                  # (1 | fem_code) +
-                 offset (log (duration)),
+                 offset (log (duration)), # same as offset = log(duration)
                # na.action = na.pass,
                data = ovi.byfem,
                family = poisson)
@@ -34,7 +35,15 @@ mod1 <- glmer (n_ovi ~
 summary (mod1)
 
 ## extraction of fixed effects coefficients and their statistical significance as a dataframe
-fixef1 <- round (coef (summary (mod1)), digits = 4)
+fixef1 <- round (coef (summary (mod1), complete = T), digits = 4)
+
+int <- fixef1[1,1] # coefficient for P. napi ovipositions in C microhabitats
+efsize <- exp(c(int, fixef1[2:6,1] + int)) # all coefficients at the response scale
+percent.pn <- efsize[1:3]/sum(efsize[1:3]) # distribution of ovipositions of P. napi
+ratio.pn <- efsize[3]/efsize[1:2] # ratio of ovipositions in OC microhabitats vs C and O microhabitats
+efsize.pr <- efsize[4:6]/sum(efsize[4:6]) # distribution of ovipositions of P. napi
+
+
 
 ## extraction of random effects variance estimate as a dataframe
 ranef1 <- as.data.frame (VarCorr (mod1, comp = c ("Variance", "Std.Dev.")))
@@ -43,6 +52,8 @@ ranef1 <- as.data.frame (VarCorr (mod1, comp = c ("Variance", "Std.Dev.")))
 ### Analysis of deviance, Wald chi-sq test
 eftest1 <- car::Anova (mod1, type = "III")
 
+
+r2(mod1)
 
 # Fig. S4 -----------------------------------------------------------------
 (ran.plot1 <- ranef (mod1, condVar = T, whichel = c("day_period")) %>% 
@@ -90,3 +101,8 @@ ranef2 <- as.data.frame (VarCorr (mod2, comp = c ("Variance", "Std.Dev.")))
 
 ## extraction of fixef effects significance test as a dataframe
 eftest2 <- car::Anova (mod2, type = "III")
+
+r2(mod2)
+
+
+
