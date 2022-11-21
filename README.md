@@ -24,6 +24,7 @@ Ecotones linking open and forested habitats contain multiple microhabitats with 
   - __`ovi_*`__: oviposition data (an entry per ovipositing female, an entry per census, and temperatures recorded during oviposition)  
   - __`TDT_experiment.txt`__: thermal death times of the larvae in heat tolerance essays
 
+more information about the variables of each data file at __`more_info_on_data.txt`__
 
 ---
 ## __`code/`__
