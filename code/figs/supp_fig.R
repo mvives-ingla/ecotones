@@ -233,7 +233,7 @@ th <- data.frame(th = seq(from = 35, to = 45, by = 2.5))
                       name = "Plant stage") +
    geom_smooth(se = F, color = "black", method = "lm") +
    labs(x = "Ordinal day",
-        y = "Foliar thermal\nheterogeneity\n(Daily SD, K)"))
+        y = "Foliar thermal\nheterogeneity\n(Daily SD, ºC)"))
 
 ## thermal offset (leaf-air)
 (offset <- data.leaves %>% 
@@ -250,7 +250,7 @@ th <- data.frame(th = seq(from = 35, to = 45, by = 2.5))
                        name = "Plant stage") +
     geom_point(alpha = 0.5) +
     geom_smooth(se = F, method = "lm", color = "black") +
-    labs(y = "Thermal offset\n(leaf - air,\nK)",
+    labs(y = "Thermal offset\n(leaf - air,\nºC)",
          x = "Ordinal day"))
 
 (temppattern <- soiltemp + microhtemp + leaftemp + sdleaf + offset +
@@ -261,8 +261,6 @@ th <- data.frame(th = seq(from = 35, to = 45, by = 2.5))
 
 (temppattern <- temppattern & scale_x_continuous(limits = c(70, 300),
                                  breaks = seq(90, 300, by = 60)))
-
-
 
 
 # Fig. S6&S7: seasonal patterns -------------------------------------------
@@ -954,7 +952,7 @@ dif_ba_tukey <- dif_ba_data %>%
                                   c2 = 85,
                                   rev = F,
                                   name = "Microhabitat") +
-  labs(y = "T<sub>basal leaf</sub> - T<sub>apical leaf</sub> (K)") +
+  labs(y = "T<sub>basal leaf</sub> - T<sub>apical leaf</sub> (ºC)") +
   theme(strip.text = element_text(face = "italic"),
         axis.title.y = element_markdown()))
 
@@ -987,7 +985,7 @@ obvrev_tukey <- data.leaves %>%
                                   name = "Microhabitat") +
   geom_text(data = obvrev_tukey, aes(x = Microhabitat, y = 10, label = .group)) +
   geom_hline(aes(yintercept = 0)) +
-  labs(y = "T<sub>upper side</sub> - T<sub>underside</sub> (K)") +
+  labs(y = "T<sub>upper side</sub> - T<sub>underside</sub> (ºC)") +
   theme_classic() +
   theme(axis.title.y = element_markdown()))
 
@@ -1037,7 +1035,7 @@ obvrev_tmax_fit <- data.leaves %>%
                                    rev = F,
                                    name = "Microhabitat") +
   labs(x = "Microhabitat T<sub>max</sub> (ºC)",
-       y = "T<sub>upper side</sub> - T<sub>underside</sub> (K)",
+       y = "T<sub>upper side</sub> - T<sub>underside</sub> (ºC)",
        subtitle = obvrev_tmax_fit$fit) +
   theme(axis.title.y = element_markdown(),
         axis.title.x = element_markdown(),
@@ -1059,6 +1057,7 @@ obvrev_tmax_fit <- data.leaves %>%
   plot_layout(ncol = 2, guides = "collect") &
   theme(legend.position = "bottom",
         plot.title = element_text(size = 10)))
+
 
 
 
