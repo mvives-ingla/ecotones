@@ -1,0 +1,69 @@
+More information about the data used in Vives-Ingla, M., J. Sala-Garcia, C. Stefanescu, A. Casadó-Tortosa, M. Garcia, J. Peñuelas, and J. Carnicer. 2022. Interspecific differences in microhabitat use expose insects to contrasting thermal mortality. Ecological Monographs.
+
+
+- but_pheno.csv: weekly counts of butterflies in the study sites during 2017  
+
+  
+- data_fruits.csv: number of fruits per host-plant species and microhabitat  
+	+ n_fruits: number of siliques (A. petiolata) or silicules (L. draba)
+
+
+- data_leaves.csv, data_microhabitat.csv, data_plants.csv: microclimatic and host-plant traits monitored in 2017 at the foliar, microhabitat and plant scales.  
+	+ site: CJ (mid-elevation), AE (lowland)
+	+ phenology: veg (vegetative), rep (reproductive), sen (senescent), sum_ros (summer rosette or resprout), aut_ros (autumn rosette or resprout)
+	+ cycle_phase: rep (plant maturation during the census year), ros (plant grows but does not maturate during 2017), absence (no plant or senescent plant)
+	+ leaf_type: b (basal), m (medial), a (apical)
+	+ obv_temp and rev_temp: obverse (upperside) and reverse (underside) foliar temperature (ºC)
+	+ soil_temp_couple: soil temperature at 10 cm depth
+	+ air_temp: air temperature above the plant (at 1 m height, ºC)
+	+ soil_surface_*: temperature (ºC) at the soil surface in solar radiation conditions (R) or not (NR). When outlier_soil_fb = 1, not very reliable measurement
+	+ cond_*, wind_*, rad_*: weather conditions during the measurement of foliar temperature (W: wind, NW: no wind, R: solar radiation, NR: no solar radiation)
+	+ METCAT_TM and METCAT_TX: mean and maximum daily temperature (ºC) from a nearby standardised weather station
+	+ SENS_TM, SENS_TX, and SENS_TM2H: daily mean, daily maximum and mean temperature (ºC) during the time slot of the plant census recorded with the microclimatic dataloggers
+	+ length, width, chl, fresh_weight, dry_weight, water_content, leaf_dens: foliar length, width, fresh weight, dry weight, water content ((FW–DW)/DW) and density (DW/length)
+	+ soil_hum_*: volumetric water content of the soil (% organic fraction, % mineral fraction, voltage)
+	+ stem_length: length of the plant stem (cm)
+	+ resp_height and resp_leaves: height (cm) and number of leaves of the summer resprout of L. draba
+	+ ground_cover: relative frequency of points on the soil surface covered by plants (X/15)
+	+ hei_ground: mean height of 15 herbaceous plants in each microhabitat
+	+ orientation_*: mean shrub and tree canopy closure in each cardinal direction (%)
+	+ orientation_V: maximum shrub and tree canopy closure in the vertical direction (%)
+	+ resprout_dens: resprout density of L. draba calculated as the number of resprouts in a square of 25cm2
+	+ n_*: relative frequency of vegetative, reproductive, senescent or summer rosettes/resprouts plants
+	
+
+
+- sensors_hourly.csv: hourly records with LASCAR data loggers at the microclimatic scale
+	+ TEMP: temperature (ºC) 
+	+ HRM: relative humidity (%)
+	+ DP: Dew point (ºC)
+	+ winter_*: time and date (CET time zone)
+	+ first: first year of a continuous recording series
+	+ last: las year of a continuous recording series
+
+
+- thermal_gradient_height.csv: thermal profiles from soil surface to 1m height
+	+ height: height from the ground (cm)
+	+ temp: temperature measured with a thermocouple (ºC)
+
+
+- meteorological_data.csv: data from weather stations  
+
+
+- ovi_*: oviposition data (an entry per ovipositing female, an entry per census, and temperatures recorded during oviposition)  
+	+ day_period: 1 (before 11am), 2 (11-13), 3 (13-15), 4 (15-17), 5 (after 17) 
+	+ duration: duration of the census (min)
+	+ fem_code: code of each female
+	+ n_ovi: number of ovipositions
+	+ n_fem: number of ovipositing females
+	+ T_upp: temperature of the foliar upper side
+	+ T_und: temperature of the foliar underside
+
+
+- TDT_experiment.txt: thermal death times of the larvae in heat tolerance essays
+	+ date: date of the experiment
+	+ treatment: programmed temperature in the water bath (40, 42 or 44 ºC)
+	+ Site: place of origin of the female adult butterflies (AE: lowland, CJ: mid-elevation)
+	+ family: family code
+	+ aprox_minute_dead: time of death (min)
+	+ log_min_death: log10 of the time of death

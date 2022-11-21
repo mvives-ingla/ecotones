@@ -15,7 +15,7 @@ data.plants <- read.csv("data/data_plants.csv")
 ## Field campaign data at the foliar level
 data.leaves <- read.csv("data/data_leaves.csv")
 ## Thermal records from the ground
-soilgrad <- read_excel ("data/feedbacks_united_2019.05.07.xlsx")
+soilgrad <- read.csv2("data/thermal_gradient_height.csv")
 
 
 theme_set(theme_classic())

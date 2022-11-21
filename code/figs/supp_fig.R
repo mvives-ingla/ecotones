@@ -34,7 +34,7 @@ data.leaves <- read.csv("data/data_leaves.csv")
 data.fruits <- read.csv ("data/data_fruits.csv")
 
 ## thermal records in the field at different heights
-soilgrad <- read_excel ("data/feedbacks_united_2019.05.07.xlsx")
+soilgrad <- read.csv2 ("data/thermal_gradient_height.csv")
 
 ## butterfly abundance in the field
 but.pheno <- read.csv("data/but_pheno.csv")
@@ -1716,7 +1716,7 @@ ontogeny_nonlinear <- function(x){(Ratkowsky(temp=x,
                                              b=b_ont_nonlinear))}
 
 
-# Own part of the script
+# Custom part of the script
 
 count_dvt_days <- function(dvt_series) {
   
