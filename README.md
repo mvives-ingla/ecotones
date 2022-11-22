@@ -33,6 +33,6 @@ More information about the variables in each data file at __`more_info_on_data.t
     - __`sim_thermal_mortality.R`__: code to predict thermal mortality from microclimatic data and bootstrapped TDT curves.  
     - __`Thermal_landscape_functions_mod.R`__: code with the functions needed to predict thermal mortality in dynamic thermal conditions from a TDT curve. Modified from Rezende, E., F. Bozinovic, A. Szilágyi, and M. Santos. 2020. Dataset and scripts from: Predicting temperature mortality and selection in natural Drosophila populations.  
     - __`function_trunk_mortality`__: custom functions to predict thermal mortality from a tolerance landscape and a temperature series for an organism that activates thermal avoidance behaviors when a thermal threshold is exceeded (simulated by trunkating the thermal profile at this thershold).  
-  - __`*_models`__: code with the (G)LMMs included in the analyses.
+  - __`*_models.R`__: code with the (G)LMMs included in the analyses.
 
   
