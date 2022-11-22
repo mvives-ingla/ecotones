@@ -14,17 +14,17 @@ Ecotones linking open and forested habitats contain multiple microhabitats with 
 
 ---
 ## __`data/`__
- 
-  - __`but_pheno.csv`__: weekly counts of butterflies in the study sites during 2017    
+  
   - __`data_fruits.csv`__: number of fruits per host-plant species and microhabitat  
   - __`data_leaves.csv`__, __`data_microhabitat.csv`__, __`data_plants.csv`__: microclimatic and host-plant traits monitored in 2017 at the foliar, microhabitat and plant scales.  
   - __`sensors_hourly.csv`__: hourly records with LASCAR data loggers at the microhabitat scale
   - __`thermal_gradient_height.csv`__: thermal profiles from soil surface to 1m height
-  - __`meteorological_data.csv`__: data from nearby standardised weather stations  
   - __`ovi_*`__: oviposition data (an entry per ovipositing female, an entry per census, and temperatures recorded during oviposition)  
   - __`TDT_experiment.txt`__: thermal death times of the larvae in heat tolerance essays
+  - __`but_pheno.csv`__: weekly counts of butterflies in the study sites during 2017. Obtained from the CBMS (https://www.catalanbms.org/) 
+  - __`meteorological_data.csv`__: data from nearby standardised weather stations. Obtained from the Meteorological Service of Catalonia (https://www.meteo.cat/)
 
-more information about the variables of each data file at __`more_info_on_data.txt`__
+More information about the variables in each data file at __`more_info_on_data.txt`__
 
 ---
 ## __`code/`__
