@@ -154,6 +154,7 @@ cn.gr.data <- data.microh %>%
          axis.title = element_text (size = 10)))
 
 
+
 # Fig. S4: ovipositions during different times of the day -----------------
 source("code/ovip_models.R")
 
@@ -261,6 +262,7 @@ th <- data.frame(th = seq(from = 35, to = 45, by = 2.5))
 
 (temppattern <- temppattern & scale_x_continuous(limits = c(70, 300),
                                  breaks = seq(90, 300, by = 60)))
+
 
 
 # Fig. S6&S7: seasonal patterns -------------------------------------------
@@ -792,12 +794,7 @@ sk.reg.fit <- fullmort %>%
         strip.background = element_rect(color = NA),
         axis.title = element_text(size = 11)))
 
-ggsave(filename = "../../figures/skew_sd_plot_v5.png",
-       plot = skewsd.plot,
-       height = 15,
-       width = 15,
-       units = "cm",
-       dpi = 600)
+
 
 # Fig. S9: details of thermal heterogeneity -------------------------------
 pal <- sequential_hcl(n = 2,
@@ -1566,6 +1563,7 @@ tdtreal <- data.frame(sp = c("PN", "PR"),
 
 
 
+
 # Fig. S15: field mortality -----------------------------------------------
 sp <- c("P. napi", "P. rapae")
 labs <- c("Semi-open and semi-closed microhabitats", "Open microhabitats")
@@ -1678,6 +1676,8 @@ names(labs) <- sp
 
 
 
+
+
 # Fig. S16: development times ---------------------------------------------
 
 
@@ -1765,7 +1765,7 @@ order_sensor <- sensor_patch %>%
   mutate(microhabitat = factor(microhabitat,
                          levels = c("C", "SC", "SO", "O"))) %>% 
   arrange(microhabitat, site) %>% 
-  select(sensor, site) %>% 
+  dplyr::select(sensor, site) %>% 
   mutate(sensor_site = paste0(sensor, " (", site, ")"))
 
 median_dvt <- dvt %>% 
@@ -1840,6 +1840,7 @@ median_dvt <- dvt %>%
     theme(strip.background = element_rect(color = NA),
           legend.position = "bottom",
           legend.box.just = "center"))
+
 
 
 

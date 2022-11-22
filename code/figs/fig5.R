@@ -13,6 +13,7 @@ library(ggnewscale)
 library(zoo)
 library(ggdist)
 
+theme_set(theme_classic(base_family = "Arial"))
 
 # Data --------------------------------------------------------------------
 ## Data from TDT experiments
@@ -287,6 +288,7 @@ names(labs2) <- c("OC", "O")
         legend.text = element_text(size = 11),
         legend.position = "top",
         axis.text.y = element_text(size = 11)))
+
 
 
 

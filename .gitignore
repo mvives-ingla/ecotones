@@ -3,6 +3,8 @@
 .RData
 .Ruserdata
 data/sim_mortalities
+data/but_pheno.csv
+data/meteorological_data.csv
 code/data_prep_v11.R
 code/mean_thermal_mortality_test.R
 figures/*

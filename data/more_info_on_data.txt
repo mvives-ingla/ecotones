@@ -1,9 +1,6 @@
 More information about the data used in Vives-Ingla, M., J. Sala-Garcia, C. Stefanescu, A. Casadó-Tortosa, M. Garcia, J. Peñuelas, and J. Carnicer. 2022. Interspecific differences in microhabitat use expose insects to contrasting thermal mortality. Ecological Monographs.
 
 
-- but_pheno.csv: weekly counts of butterflies in the study sites during 2017  
-
-  
 - data_fruits.csv: number of fruits per host-plant species and microhabitat  
 	+ n_fruits: number of siliques (A. petiolata) or silicules (L. draba)
 
@@ -45,9 +42,6 @@ More information about the data used in Vives-Ingla, M., J. Sala-Garcia, C. Stef
 - thermal_gradient_height.csv: thermal profiles from soil surface to 1m height
 	+ height: height from the ground (cm)
 	+ temp: temperature measured with a thermocouple (ºC)
-
-
-- meteorological_data.csv: data from weather stations  
 
 
 - ovi_*: oviposition data (an entry per ovipositing female, an entry per census, and temperatures recorded during oviposition)  
