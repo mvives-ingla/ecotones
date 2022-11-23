@@ -11,18 +11,20 @@ More information about the data used in Vives-Ingla, M., J. Sala-Garcia, C. Stef
 	+ cycle_phase: rep (plant maturation during the census year), ros (plant grows but does not maturate during 2017), absence (no plant or senescent plant)
 	+ leaf_type: b (basal), m (medial), a (apical)
 	+ obv_temp and rev_temp: obverse (upperside) and reverse (underside) foliar temperature (ºC)
-	+ soil_temp_couple: soil temperature at 10 cm depth
+	+ soil_temp_couple: soil temperature at 10 cm depth (ºC)
 	+ air_temp: air temperature above the plant (at 1 m height, ºC)
 	+ soil_surface_*: temperature (ºC) at the soil surface in solar radiation conditions (R) or not (NR). When outlier_soil_fb = 1, not very reliable measurement
 	+ cond_*, wind_*, rad_*: weather conditions during the measurement of foliar temperature (W: wind, NW: no wind, R: solar radiation, NR: no solar radiation)
 	+ METCAT_TM and METCAT_TX: mean and maximum daily temperature (ºC) from a nearby standardised weather station
 	+ SENS_TM, SENS_TX, and SENS_TM2H: daily mean, daily maximum and mean temperature (ºC) during the time slot of the plant census recorded with the microclimatic dataloggers
-	+ length, width, chl, fresh_weight, dry_weight, water_content, leaf_dens: foliar length, width, fresh weight, dry weight, water content ((FW–DW)/DW) and density (DW/length)
+	+ length, width: foliar length (including the peciole) and maximum width (cm)
+	+ chl: foliar chlorophyll content (SPAD)
+	+ fresh_weight, dry_weight, water_content, leaf_dens:  foliar fresh weight (FW, g), foliar dry weight (DW, g), foliar water content ((FW–DW)/DW*100, %) and density (DW/length, g/cm)
 	+ soil_hum_*: volumetric water content of the soil (% organic fraction, % mineral fraction, voltage)
 	+ stem_length: length of the plant stem (cm)
 	+ resp_height and resp_leaves: height (cm) and number of leaves of the summer resprout of L. draba
 	+ ground_cover: relative frequency of points on the soil surface covered by plants (X/15)
-	+ hei_ground: mean height of 15 herbaceous plants in each microhabitat
+	+ hei_ground: mean height of 15 herbaceous plants in each microhabitat (cm)
 	+ orientation_*: mean shrub and tree canopy closure in each cardinal direction (%)
 	+ orientation_V: maximum shrub and tree canopy closure in the vertical direction (%)
 	+ resprout_dens: resprout density of L. draba calculated as the number of resprouts in a square of 25cm2
@@ -50,12 +52,12 @@ More information about the data used in Vives-Ingla, M., J. Sala-Garcia, C. Stef
 	+ fem_code: code of each female
 	+ n_ovi: number of ovipositions
 	+ n_fem: number of ovipositing females
-	+ T_upp: temperature of the foliar upper side
-	+ T_und: temperature of the foliar underside
+	+ T_upp: temperature of the foliar upper side (ºC)
+	+ T_und: temperature of the foliar underside (ºC)
 
 
 - TDT_experiment.txt: thermal death times of the larvae in heat tolerance essays
-	+ date: date of the experiment
+	+ date: date of the experiment (dd/mm/yyyy)
 	+ treatment: programmed temperature in the water bath (40, 42 or 44 ºC)
 	+ Site: place of origin of the female adult butterflies (AE: lowland, CJ: mid-elevation)
 	+ family: family code
