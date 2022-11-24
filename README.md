@@ -2,7 +2,7 @@ Data and code associated with the manuscript
 Vives-Ingla, M., J. Sala-Garcia, C. Stefanescu, A. Casadó-Tortosa, M. Garcia, J. Peñuelas, and J. Carnicer. 2022. Interspecific differences in microhabitat use expose insects to contrasting thermal mortality. Ecological Monographs.
 
 
-<b>If you are planning to use this code and associated data, please contact us:</b>
+<b>If you are planning to use this data and/or the associated code, please contact us:</b>
  
 m.vives[at]creaf.uab.cat  
 jofre.carnicer[at]ub.edu
